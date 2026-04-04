@@ -1,0 +1,1833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LOOP 00 — The Hargrove Incident</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #111118;
+    --bg3: #18181f;
+    --surface: #1e1e28;
+    --surface2: #252530;
+    --border: rgba(180,160,255,0.12);
+    --border2: rgba(180,160,255,0.22);
+    --accent: #b4a0ff;
+    --accent2: #7fd4c1;
+    --accent3: #ff9e7a;
+    --danger: #ff6b6b;
+    --text: #e8e4f5;
+    --text2: #a09abf;
+    --text3: #6a6480;
+    --mono: 'Share Tech Mono', monospace;
+    --serif: 'Playfair Display', serif;
+    --sans: 'DM Sans', sans-serif;
+    --glow: 0 0 20px rgba(180,160,255,0.15);
+    --loop-color: #b4a0ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* SCANLINES OVERLAY */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* LAYOUT */
+  #game-wrapper {
+    display: grid;
+    grid-template-columns: 280px 1fr 260px;
+    grid-template-rows: 64px 1fr 180px;
+    height: 100vh;
+    gap: 0;
+  }
+
+  /* TOP BAR */
+  #topbar {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    gap: 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  #topbar::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.4;
+  }
+  .game-title {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+  .game-subtitle {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 14px;
+    color: var(--text2);
+    flex: 1;
+  }
+
+  /* LOOP TIMER */
+  #loop-display {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-left: auto;
+  }
+  .loop-number {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 1px;
+  }
+  .loop-number span {
+    color: var(--accent);
+    font-size: 18px;
+    font-weight: normal;
+  }
+  #timer-bar-wrap {
+    width: 200px;
+    height: 4px;
+    background: var(--surface);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+  }
+  #timer-bar {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    border-radius: 2px;
+    transition: width 1s linear;
+    transform-origin: left;
+  }
+  #timer-bar.critical { background: linear-gradient(90deg, var(--danger), var(--accent3)); }
+  #timer-text {
+    font-family: var(--mono);
+    font-size: 16px;
+    color: var(--text);
+    min-width: 32px;
+    text-align: right;
+  }
+  #timer-text.critical { color: var(--danger); }
+
+  /* LEFT PANEL - MAP */
+  #left-panel {
+    grid-row: 2;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .panel-header {
+    padding: 14px 16px 10px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent);
+  }
+
+  /* MAP GRID */
+  #map-container {
+    flex: 1;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+  }
+  .map-location {
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    background: var(--bg3);
+  }
+  .map-location:hover { border-color: var(--border2); background: var(--surface); transform: translateX(3px); }
+  .map-location.active { border-color: var(--accent); background: var(--surface); box-shadow: var(--glow); }
+  .map-location.locked { opacity: 0.4; cursor: not-allowed; }
+  .map-location.locked:hover { transform: none; background: var(--bg3); border-color: var(--border); }
+  .loc-name {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .loc-hint {
+    font-size: 11px;
+    color: var(--text3);
+    font-family: var(--mono);
+  }
+  .loc-badge {
+    position: absolute;
+    top: 8px; right: 8px;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--bg);
+    font-size: 9px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+  }
+  .loc-badge.new { background: var(--accent3); }
+  .loc-visited::after {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 2px;
+    background: var(--accent2);
+    border-radius: 6px 0 0 6px;
+  }
+
+  /* MAIN SCENE */
+  #scene-panel {
+    grid-row: 2;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    overflow: hidden;
+  }
+  #scene-header {
+    padding: 20px 28px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+  }
+  #scene-location {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  #scene-title {
+    font-family: var(--serif);
+    font-size: 22px;
+    color: var(--text);
+  }
+  #scene-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  #scene-body::-webkit-scrollbar { width: 4px; }
+  #scene-body::-webkit-scrollbar-track { background: transparent; }
+  #scene-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* NPC DIALOGUE */
+  .npc-block {
+    margin-bottom: 24px;
+    animation: fadeSlide 0.3s ease;
+  }
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .npc-name {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .npc-memory-tag {
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: rgba(180,160,255,0.1);
+    border: 1px solid rgba(180,160,255,0.2);
+    color: var(--accent);
+    letter-spacing: 1px;
+  }
+  .npc-memory-tag.suspicious { background: rgba(255,110,110,0.1); border-color: rgba(255,110,110,0.2); color: var(--danger); }
+  .npc-memory-tag.friendly { background: rgba(127,212,193,0.1); border-color: rgba(127,212,193,0.2); color: var(--accent2); }
+  .npc-speech {
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text2);
+    padding: 12px 16px;
+    border-left: 2px solid var(--border2);
+    background: var(--bg2);
+    border-radius: 0 6px 6px 0;
+    font-style: italic;
+  }
+  .npc-speech.remembered {
+    border-left-color: var(--accent);
+    background: rgba(180,160,255,0.05);
+  }
+
+  /* NARRATION TEXT */
+  .narration {
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text2);
+    margin-bottom: 20px;
+  }
+  .narration b { color: var(--text); font-weight: 500; }
+  .narration em { color: var(--accent); font-style: normal; }
+
+  /* CLUE REVEAL */
+  .clue-found {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    background: rgba(127,212,193,0.07);
+    border: 1px solid rgba(127,212,193,0.2);
+    border-radius: 8px;
+    margin-bottom: 20px;
+    animation: clueReveal 0.5s ease;
+  }
+  @keyframes clueReveal {
+    from { opacity: 0; transform: scale(0.97); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  .clue-icon {
+    width: 32px; height: 32px;
+    border-radius: 6px;
+    background: rgba(127,212,193,0.15);
+    border: 1px solid rgba(127,212,193,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+    color: var(--accent2);
+    font-family: var(--mono);
+    font-size: 16px;
+  }
+  .clue-text { font-size: 13px; line-height: 1.6; color: var(--text2); }
+  .clue-text strong { color: var(--accent2); font-weight: 500; display: block; margin-bottom: 3px; font-family: var(--mono); font-size: 11px; letter-spacing: 1px; }
+
+  /* CHOICE BUTTONS */
+  #choices {
+    padding: 16px 28px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-top: 1px solid var(--border);
+    background: var(--bg2);
+    min-height: 60px;
+  }
+  .choice-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 16px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    width: 100%;
+    color: var(--text2);
+    font-family: var(--sans);
+    font-size: 13px;
+  }
+  .choice-btn:hover { background: var(--surface); border-color: var(--border2); color: var(--text); transform: translateX(4px); }
+  .choice-btn:active { transform: translateX(2px) scale(0.99); }
+  .choice-btn.danger { border-color: rgba(255,107,107,0.2); }
+  .choice-btn.danger:hover { border-color: var(--danger); background: rgba(255,107,107,0.07); color: var(--danger); }
+  .choice-btn .choice-key {
+    width: 22px; height: 22px;
+    border-radius: 4px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    flex-shrink: 0;
+  }
+  .choice-btn .choice-cost {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+  }
+
+  /* RIGHT PANEL - NOTES */
+  #right-panel {
+    grid-row: 2;
+    background: var(--bg2);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  #notes-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  #notes-container::-webkit-scrollbar { width: 3px; }
+  #notes-container::-webkit-scrollbar-thumb { background: var(--border2); }
+
+  .note-card {
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    animation: noteIn 0.3s ease;
+  }
+  @keyframes noteIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+  .note-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    color: var(--text3);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .note-content {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text2);
+  }
+  .note-card.clue { border-color: rgba(127,212,193,0.25); }
+  .note-card.clue .note-label { color: var(--accent2); }
+  .note-card.suspect { border-color: rgba(255,110,110,0.2); }
+  .note-card.suspect .note-label { color: var(--danger); }
+  .note-card.loop { border-color: rgba(180,160,255,0.2); }
+  .note-card.loop .note-label { color: var(--accent); }
+
+  /* BOTTOM BAR */
+  #bottom-bar {
+    grid-column: 1 / -1;
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 16px;
+    overflow-x: auto;
+  }
+  .bottom-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    padding: 12px 16px;
+    border-right: 1px solid var(--border);
+    min-width: fit-content;
+  }
+  .bottom-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text3);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .bottom-value {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+  }
+  .bottom-value.accent { color: var(--accent); }
+  .bottom-value.good { color: var(--accent2); }
+  .bottom-value.warn { color: var(--accent3); }
+  .bottom-value.bad { color: var(--danger); }
+
+  /* SUSPECT PORTRAITS */
+  .suspect-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .suspect-portrait {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+  }
+  .portrait-circle {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif);
+    font-size: 13px;
+    color: var(--text2);
+    transition: all 0.2s;
+    background: var(--bg3);
+    font-style: italic;
+  }
+  .suspect-portrait:hover .portrait-circle { border-color: var(--border2); }
+  .suspect-portrait.suspect-hi .portrait-circle { border-color: var(--danger); color: var(--danger); }
+  .suspect-portrait.suspect-low .portrait-circle { border-color: rgba(127,212,193,0.3); color: var(--accent2); }
+  .suspect-portrait.trust-built .portrait-circle { border-color: var(--accent); color: var(--accent); }
+  .portrait-name { font-size: 9px; color: var(--text3); font-family: var(--mono); letter-spacing: 0.5px; }
+
+  /* MODALS */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(10,10,15,0.9);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal-box {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 32px;
+    max-width: 520px;
+    width: 90%;
+    box-shadow: 0 0 60px rgba(0,0,0,0.8), 0 0 30px rgba(180,160,255,0.05);
+    animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes modalIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .modal-title {
+    font-family: var(--serif);
+    font-size: 24px;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+  .modal-subtitle {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+  }
+  .modal-body { font-size: 14px; line-height: 1.7; color: var(--text2); margin-bottom: 24px; }
+  .modal-body p { margin-bottom: 12px; }
+  .modal-btn {
+    padding: 11px 24px;
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+    background: var(--surface);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-block;
+    margin-right: 10px;
+    margin-top: 4px;
+  }
+  .modal-btn:hover { background: var(--surface2); border-color: var(--accent); color: var(--accent); }
+  .modal-btn.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .modal-btn.primary:hover { background: #c8b8ff; }
+  .modal-btn.danger-btn { border-color: rgba(255,107,107,0.3); }
+  .modal-btn.danger-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* LOOP RESET FLASH */
+  #loop-flash {
+    position: fixed; inset: 0;
+    background: var(--accent);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 9998;
+    transition: opacity 0.1s;
+  }
+
+  /* GLITCH EFFECT */
+  @keyframes glitch {
+    0%, 90%, 100% { transform: translate(0); }
+    91% { transform: translate(-2px, 1px); }
+    93% { transform: translate(2px, -1px); }
+    95% { transform: translate(-1px, 2px); }
+    97% { transform: translate(1px, -2px); }
+  }
+  .glitch { animation: glitch 8s infinite; }
+
+  /* PULSE BADGE */
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 4px var(--accent); }
+    50% { box-shadow: 0 0 10px var(--accent); }
+  }
+  .pulse { animation: pulse 2s infinite; }
+
+  /* EMPTY NOTES */
+  .notes-empty {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+    text-align: center;
+    padding: 20px 12px;
+    line-height: 1.7;
+  }
+
+  /* VICTORY/FAILURE SCREEN */
+  .end-screen .modal-title { color: var(--accent); }
+  .end-screen.fail .modal-title { color: var(--danger); }
+  .end-screen .loop-count {
+    font-family: var(--mono);
+    font-size: 48px;
+    color: var(--accent);
+    text-align: center;
+    margin: 16px 0;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    #game-wrapper { grid-template-columns: 200px 1fr; grid-template-rows: 56px 1fr auto 140px; }
+    #right-panel { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="loop-flash"></div>
+
+<div id="game-wrapper">
+  <!-- TOP BAR -->
+  <div id="topbar">
+    <div class="game-title glitch">LOOP-00</div>
+    <div class="game-subtitle">The Hargrove Incident</div>
+    <div id="loop-display">
+      <div class="loop-number">LOOP <span id="loop-num">1</span></div>
+      <div id="timer-bar-wrap">
+        <div id="timer-bar"></div>
+      </div>
+      <div id="timer-text">10:00</div>
+    </div>
+  </div>
+
+  <!-- LEFT PANEL -->
+  <div id="left-panel">
+    <div class="panel-header"><div class="panel-dot pulse"></div>LOCATIONS</div>
+    <div id="map-container"></div>
+  </div>
+
+  <!-- MAIN SCENE -->
+  <div id="scene-panel">
+    <div id="scene-header">
+      <div id="scene-location">SELECT A LOCATION</div>
+      <div id="scene-title">Choose where to go</div>
+    </div>
+    <div id="scene-body"></div>
+    <div id="choices"></div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div id="right-panel">
+    <div class="panel-header"><div class="panel-dot" style="background:var(--accent2);box-shadow:0 0 6px var(--accent2)"></div>NOTES &amp; EVIDENCE</div>
+    <div id="notes-container">
+      <div class="notes-empty" id="notes-empty">No evidence collected yet.<br>Information persists<br>across loops.</div>
+    </div>
+  </div>
+
+  <!-- BOTTOM BAR -->
+  <div id="bottom-bar">
+    <div class="bottom-section">
+      <div class="bottom-label">OBJECTIVE</div>
+      <div class="bottom-value" id="objective-text">Discover who killed Victor Hargrove</div>
+    </div>
+    <div class="bottom-section">
+      <div class="bottom-label">SUSPECTS</div>
+      <div class="suspect-row" id="suspect-row"></div>
+    </div>
+    <div class="bottom-section">
+      <div class="bottom-label">CONFIDENCE</div>
+      <div class="bottom-value accent" id="confidence-val">0%</div>
+    </div>
+    <div class="bottom-section">
+      <div class="bottom-label">ACTIONS LEFT</div>
+      <div class="bottom-value" id="actions-left">—</div>
+    </div>
+    <div style="margin-left:auto;padding:0 12px;display:flex;gap:8px;">
+      <button class="modal-btn" onclick="G.accusePrompt()" id="accuse-btn">ACCUSE (2 left)</button>
+      <button class="modal-btn" onclick="G.showHelp()">HELP</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const GAME = {
+  // ── GAME STATE ───────────────────────────────────────────────
+  loop: 1,
+  time: 600,
+  timerInterval: null,
+  actionsThisLoop: 0,
+  maxActions: 6,
+  knowledge: new Set(),
+  suspectTrust: { 'eleanor': 0, 'drwu': 0, 'felix': 0, 'vera': 0 },
+  suspectSuspicion: { 'eleanor': 0, 'drwu': 0, 'felix': 0, 'vera': 0 },
+  loopHistory: [],
+  currentLoop_actions: [],
+  currentLocation: null,
+  gameOver: false,
+  accusationAttempts: 0,
+
+  // ── WORLD DATA ────────────────────────────────────────────────
+  suspects: {
+    eleanor: { name: 'Eleanor', full: 'Eleanor Hargrove', initials: 'EH', role: 'Victim\'s wife', guilty: false },
+    drwu:    { name: 'Dr. Wu',  full: 'Dr. Sandra Wu',   initials: 'SW', role: 'Family physician', guilty: false },
+    felix:   { name: 'Felix',   full: 'Felix Crane',     initials: 'FC', role: 'Business partner', guilty: true  },
+    vera:    { name: 'Vera',    full: 'Vera Solano',     initials: 'VS', role: 'Household staff', guilty: false },
+  },
+
+  locations: {
+    study: {
+      id: 'study', name: 'The Study',
+      desc: 'Victor Hargrove\'s private study. Books line the walls. A half-finished glass of whiskey sits on the desk, untouched.',
+      subtitle: 'Victor\'s Private Study',
+      unlocked: true,
+      actions: ['study_desk', 'study_bookshelf', 'study_whiskey', 'study_window'],
+    },
+    library: {
+      id: 'library', name: 'The Library',
+      desc: 'High shelves. The smell of old paper. A leather chair sits angled toward the fireplace—recently used.',
+      subtitle: 'East Wing Library',
+      unlocked: true,
+      actions: ['library_felix', 'library_ledger', 'library_fireplace', 'library_felix_pressA', 'library_felix_pressB'],
+    },
+    kitchen: {
+      id: 'kitchen', name: 'The Kitchen',
+      desc: 'Vera moves with practiced efficiency. She looks up when you enter, surprised, then guarded.',
+      subtitle: 'Ground Floor Kitchen',
+      unlocked: true,
+      actions: ['kitchen_vera', 'kitchen_medicine', 'kitchen_vera_trust', 'kitchen_vera_acc'],
+    },
+    garden: {
+      id: 'garden', name: 'The Garden',
+      desc: 'Eleanor stands alone in the fog. She turns slowly. Her eyes are red—from crying, or something else.',
+      subtitle: 'The East Garden',
+      unlocked: true,
+      actions: ['garden_eleanor', 'garden_eleanor_alibi', 'garden_eleanor_secret', 'garden_footprints'],
+    },
+    clinic: {
+      id: 'clinic', name: 'Dr. Wu\'s Clinic',
+      desc: 'The clinic is cluttered with files. Dr. Wu meets your eyes with practiced calm—she\'s prepared.',
+      subtitle: 'Hargrove Estate Clinic',
+      unlocked: true,
+      actions: ['clinic_drwu', 'clinic_records', 'clinic_prescriptions', 'clinic_drwu_confront'],
+    },
+    vault: {
+      id: 'vault', name: 'The Vault',
+      desc: 'Hidden behind a bookcase in the study. You need a combination—or someone who knows it.',
+      subtitle: 'Hidden Below the Study',
+      unlocked: false,
+      unlockKey: 'knows_vault_location',
+      actions: ['vault_open', 'vault_contract', 'vault_photos'],
+    },
+  },
+
+  // ── ACTIONS ───────────────────────────────────────────────────
+  actions: {
+    // STUDY
+    study_desk: {
+      label: 'Examine Victor\'s desk',
+      cost: '~1 min',
+      available() { return true; },
+      run(G) {
+        G.addKnowledge('desk_examined');
+        const seen = G.knowledge.has('desk_examined_before');
+        G.addKnowledge('desk_examined_before');
+        let txt = '';
+        if (seen) txt += '<p><em>[You remember this now — you\'ve been here before.]</em></p>';
+        txt += '<p>The desk drawer is locked. But a torn corner of paper catches your eye — it reads: <b>"-lix owes me everything. He knows what will happen if—"</b> The rest is gone.</p>';
+        if (!seen) {
+          G.addClue('torn_note', 'Torn Note', 'Found on Victor\'s desk. Fragment reads: "...lix owes me everything. He knows what will happen if—"', 'clue');
+          txt += G.clueHTML('torn_note', 'Torn Note', 'Fragment mentioning someone called "lix" — likely Felix?');
+        }
+        return { narration: txt, actions: ['study_bookshelf','study_whiskey','study_window','leave_study'] };
+      }
+    },
+    study_bookshelf: {
+      label: 'Search the bookshelf',
+      cost: '~2 min',
+      available() { return true; },
+      run(G) {
+        G.addKnowledge('bookshelf_searched');
+        let txt = '<p>Most books are undisturbed. But behind a copy of <b>The Count of Monte Cristo</b>, you find a small lever. Pulling it reveals a gap in the wall — with a keypad lock.</p>';
+        if (!G.knowledge.has('vault_hint_found')) {
+          G.addKnowledge('knows_vault_location');
+          G.addKnowledge('vault_hint_found');
+          txt += '<p>A sticky note on the keypad: <b>"Combination — ask the one who mixed the drinks."</b></p>';
+          G.addClue('vault_location', 'Hidden Vault', 'Behind the bookshelf in the study. Combination is held by whoever "mixed the drinks."', 'clue');
+          txt += G.clueHTML('vault_location', 'Hidden Vault', 'There\'s a secret vault. The combination is with whoever mixed Victor\'s drinks.');
+          G.unlockLocation('vault');
+        } else {
+          txt += '<p><em>[You already know about the vault. The keypad waits.]</em></p>';
+        }
+        return { narration: txt, actions: ['study_desk','study_whiskey','leave_study'] };
+      }
+    },
+    study_whiskey: {
+      label: 'Inspect the whiskey glass',
+      cost: '~1 min',
+      available() { return true; },
+      run(G) {
+        let txt = '';
+        if (G.knowledge.has('whiskey_tested')) {
+          txt = '<p><em>[You\'ve tested this before. The answer hasn\'t changed.]</em></p><p>The glass still holds trace residue of something bitter. You know it\'s <b>Aconitine</b> — a poison derived from monkshood. It mimics a heart attack perfectly.</p>';
+        } else {
+          G.addKnowledge('whiskey_tested');
+          G.addClue('whiskey_poison', 'Poisoned Whiskey', 'The whiskey glass contains Aconitine — a rare poison that mimics cardiac arrest. Someone prepared this drink.', 'clue');
+          txt = '<p>You lift the glass and sniff. Something bitter beneath the oak. In a past loop you learned enough to recognize it: <b>Aconitine</b>.</p>';
+          txt += G.clueHTML('whiskey_poison', 'Poisoned Whiskey', 'Aconitine in Victor\'s whiskey. Mimics a heart attack. Someone who knew his routine prepared this.');
+        }
+        return { narration: txt, actions: ['study_desk','study_bookshelf','leave_study'] };
+      }
+    },
+    study_window: {
+      label: 'Look out the window',
+      cost: '~30 sec',
+      available() { return true; },
+      run(G) {
+        let txt = '<p>The fog rolls in from the garden. Through it, you see <b>two figures</b> near the east hedge — a taller one in a dark coat and a shorter one gesturing. They separate quickly when they notice movement at the window.</p>';
+        if (!G.knowledge.has('figures_seen')) {
+          G.addKnowledge('figures_seen');
+          G.addClue('two_figures', 'Two Figures', 'Seen from study window meeting near east hedge — one in a dark coat. They separate when observed.', 'suspect');
+          txt += G.clueHTML('two_figures', 'Two Figures', 'Someone was meeting someone near the east hedge, just before Victor was found.');
+        }
+        return { narration: txt, actions: ['study_desk','study_bookshelf','study_whiskey','leave_study'] };
+      }
+    },
+
+    // LIBRARY
+    library_felix: {
+      label: 'Speak with Felix Crane',
+      cost: '~2 min',
+      available() { return true; },
+      run(G) {
+        const trust = G.suspectTrust.felix;
+        const loops = G.loop;
+        let speech = '';
+        let tag = '';
+        if (trust >= 2) {
+          tag = 'friendly';
+          speech = `"You again." He sighs, setting down his glass. "Look, I know how it looks. Victor and I had disagreements. Business disagreements. That doesn't make me a killer." He glances at the door. "But there are things... things I couldn't say before."`;
+          if (!G.knowledge.has('felix_partial_confession')) {
+            G.addKnowledge('felix_partial_confession');
+            G.addClue('felix_confession', 'Felix — Partial Confession', '"Business disagreements." He seemed ready to say more. Follow up aggressively next loop.', 'suspect');
+          }
+        } else if (G.knowledge.has('confronted_felix') && loops > 1) {
+          tag = 'suspicious';
+          speech = `His eyes narrow. "You... I've seen you before. Haven't I?" He shakes his head. "That's impossible." He straightens up. "I have nothing to say to you."`;
+          G.addSuspicion('felix', 1);
+        } else {
+          speech = `"A terrible business." Felix swirls his brandy without drinking it. "Victor had enemies, of course. Successful men do." He smiles thinly. "I wouldn't know anything beyond that."`;
+        }
+        G.suspectTrust.felix = Math.min(G.suspectTrust.felix + 1, 4);
+        let avail = ['library_ledger', 'library_fireplace'];
+        if (trust >= 1) avail.push('library_felix_pressA');
+        if (trust >= 2 || G.knowledge.has('torn_note')) avail.push('library_felix_pressB');
+        avail.push('leave_library');
+        return {
+          npc: { name: 'Felix Crane', tag, speech, remembered: loops > 1 && trust > 0 },
+          narration: '', actions: avail
+        };
+      }
+    },
+    library_felix_pressA: {
+      label: 'Ask Felix about the debt',
+      cost: '~1 min',
+      available(G) { return G.suspectTrust.felix >= 1; },
+      run(G) {
+        G.addKnowledge('confronted_felix');
+        G.addSuspicion('felix', 2);
+        let speech = `Felix's composure fractures for just a moment. "Where did you hear about — " He collects himself. "Victor loaned me money once. Years ago. It was repaid." A pause that says otherwise. "Fully."`;
+        if (!G.knowledge.has('felix_debt_confirmed')) {
+          G.addKnowledge('felix_debt_confirmed');
+          G.addClue('felix_debt', 'Felix\'s Debt', 'Victor loaned Felix money. Felix claims it was repaid. His reaction suggests otherwise.', 'suspect');
+        }
+        return {
+          npc: { name: 'Felix Crane', tag: 'suspicious', speech, remembered: true },
+          narration: '', actions: ['library_felix_pressB','library_ledger','leave_library']
+        };
+      }
+    },
+    library_felix_pressB: {
+      label: 'Show Felix the torn note',
+      cost: '~1 min',
+      available(G) { return G.knowledge.has('torn_note') && G.knowledge.has('confronted_felix'); },
+      run(G) {
+        G.addSuspicion('felix', 3);
+        G.addKnowledge('felix_caught');
+        let speech = `The color drains from Felix's face. His hands tighten on the glass stem until you think it might break. "That... was taken out of context. Victor and I had an agreement." His voice drops. "He was going to ruin me. Destroy everything I built. Would you just stand there and let that happen?"`;
+        if (!G.knowledge.has('felix_motive_confirmed')) {
+          G.addKnowledge('felix_motive_confirmed');
+          G.addClue('felix_motive', 'Felix\'s Motive', 'Victor was about to "ruin" Felix. Felix all but admits fear and motive. His reaction: panic.', 'suspect');
+        }
+        return {
+          npc: { name: 'Felix Crane', tag: 'suspicious', speech, remembered: true },
+          narration: '<p>This is the clearest admission you\'ve gotten yet. But it\'s not a confession.</p>',
+          actions: ['leave_library']
+        };
+      }
+    },
+    library_ledger: {
+      label: 'Examine the account ledger',
+      cost: '~2 min',
+      available() { return true; },
+      run(G) {
+        let txt = '';
+        if (G.knowledge.has('ledger_checked')) {
+          txt = '<p><em>[You\'ve seen this before. The numbers tell the same story.]</em></p>';
+        }
+        txt += '<p>An open ledger on the reading table — it\'s Victor\'s financial records. You find a column marked <b>"F.C. — OUTSTANDING"</b> with a figure: <b>£240,000</b>. Crossed out three times, then re-entered. The dates go back two years.</p>';
+        if (!G.knowledge.has('ledger_checked')) {
+          G.addKnowledge('ledger_checked');
+          G.addClue('ledger', 'Account Ledger', '£240,000 owed by "F.C." — Felix Crane? The debt was never settled, despite being crossed out repeatedly.', 'suspect');
+          txt += G.clueHTML('ledger', 'Account Ledger', '£240,000 owed by F.C. — debt never settled. Victor kept meticulous records.');
+        }
+        return { narration: txt, actions: ['library_felix','library_fireplace','leave_library'] };
+      }
+    },
+    library_fireplace: {
+      label: 'Sift the fireplace ashes',
+      cost: '~2 min',
+      available() { return true; },
+      run(G) {
+        let txt = '<p>The grate is still warm. Someone burned documents recently. You sift through the ash and find fragments — a letterhead with a solicitor\'s name, and partial text: <b>"...hereby amend the beneficiary to..."</b></p>';
+        if (!G.knowledge.has('will_burned')) {
+          G.addKnowledge('will_burned');
+          G.addClue('burned_will', 'Burned Document', 'Someone burned documents in the library. Fragments suggest an amended will. Who had access?', 'clue');
+          txt += G.clueHTML('burned_will', 'Burned Will Fragment', 'Someone changed — and then burned — Victor\'s will. Timing is everything.');
+        }
+        return { narration: txt, actions: ['library_felix','library_ledger','leave_library'] };
+      }
+    },
+
+    // KITCHEN
+    kitchen_vera: {
+      label: 'Speak with Vera Solano',
+      cost: '~2 min',
+      available() { return true; },
+      run(G) {
+        const trust = G.suspectTrust.vera;
+        let speech = '', tag = '';
+        if (trust >= 2) {
+          tag = 'friendly';
+          speech = `"I shouldn't be saying this." She lowers her voice. "But that evening — Mr. Crane, he came in here alone. Said he needed something for 'Mr. Victor's evening drink.' I thought nothing of it. He knew the routines." She pauses. "He knew where the bitters were kept."`;
+          if (!G.knowledge.has('vera_witness')) {
+            G.addKnowledge('vera_witness');
+            G.addKnowledge('vault_combination_hint');
+            G.addClue('vera_testimony', 'Vera\'s Testimony', 'Vera saw Felix Crane access the study drinks cabinet the evening of Victor\'s death. Unprompted.', 'clue');
+          }
+        } else if (trust === 1) {
+          tag = 'friendly';
+          speech = `She refills your cup without being asked. "You've been kind to me. Not everyone has." She glances toward the hallway. "There are things I've seen in this house. Things I'm afraid to speak aloud." She shakes her head slowly.`;
+        } else {
+          speech = `She keeps her eyes on her work. "I just cook and clean, sir. I don't ask questions. I find it's healthier that way."`;
+        }
+        G.suspectTrust.vera = Math.min(G.suspectTrust.vera + 1, 4);
+        let avail = ['kitchen_medicine'];
+        if (trust >= 1) avail.push('kitchen_vera_trust');
+        avail.push('leave_kitchen');
+        return {
+          npc: { name: 'Vera Solano', tag, speech, remembered: G.loop > 1 && trust > 0 },
+          narration: '', actions: avail
+        };
+      }
+    },
+    kitchen_vera_trust: {
+      label: 'Ask Vera about the vault combination',
+      cost: '~1 min',
+      available(G) { return G.suspectTrust.vera >= 1 && G.knowledge.has('knows_vault_location'); },
+      run(G) {
+        let speech = '', txt = '';
+        if (G.knowledge.has('vault_combination_hint') || G.suspectTrust.vera >= 2) {
+          speech = `She thinks for a moment. "The combination... Mr. Victor changed it last month. He told me, because he said I was the only one he trusted." She writes a number on the edge of a napkin: <b>4-7-2-9</b>. "Please don't let them know I told you."`;
+          if (!G.knowledge.has('vault_code')) {
+            G.addKnowledge('vault_code');
+            G.addKnowledge('vault_unlocked_ready');
+            G.addClue('vault_code', 'Vault Code: 4729', 'Given by Vera. Victor changed it last month and trusted only Vera with it.', 'clue');
+          }
+        } else {
+          speech = `"I... don't know what you mean." She looks away. She knows, but doesn't trust you enough yet.`;
+        }
+        return {
+          npc: { name: 'Vera Solano', tag: 'friendly', speech, remembered: true },
+          narration: txt, actions: ['kitchen_vera','kitchen_medicine','leave_kitchen']
+        };
+      }
+    },
+    kitchen_vera_acc: {
+      label: 'Ask Vera if she suspects anyone',
+      cost: '~1 min',
+      available(G) { return G.suspectTrust.vera >= 2; },
+      run(G) {
+        return {
+          npc: { name: 'Vera Solano', tag: 'friendly', speech: `"Mr. Crane." She says it quietly, like releasing a breath held too long. "He was always too comfortable here. Too familiar with Mr. Victor's habits." She meets your eyes. "The kind of comfortable that waits for an opportunity."`, remembered: true },
+          narration: '',
+          actions: ['kitchen_vera','leave_kitchen']
+        };
+      }
+    },
+    kitchen_medicine: {
+      label: 'Check the medicine cabinet',
+      cost: '~1 min',
+      available() { return true; },
+      run(G) {
+        let txt = '<p>The cabinet holds standard household medicines. But on the bottom shelf, tucked behind aspirin: an <b>unmarked brown glass bottle</b>, nearly empty. The smell — floral and sharp — is distinctive.</p>';
+        if (!G.knowledge.has('kitchen_bottle_found')) {
+          G.addKnowledge('kitchen_bottle_found');
+          G.addClue('aconitine_bottle', 'Aconitine Source?', 'Unmarked bottle in kitchen medicine cabinet. Near-empty. Floral, sharp smell — matches the poison in Victor\'s whiskey.', 'suspect');
+          txt += G.clueHTML('aconitine_bottle', 'Unmarked Bottle', 'Same smell as the whiskey residue. Kept in the kitchen — accessible to anyone.');
+        } else {
+          txt += '<p><em>[You\'ve seen this bottle before. It hasn\'t moved.]</em></p>';
+        }
+        return { narration: txt, actions: ['kitchen_vera','leave_kitchen'] };
+      }
+    },
+
+    // GARDEN
+    garden_eleanor: {
+      label: 'Approach Eleanor',
+      cost: '~2 min',
+      available() { return true; },
+      run(G) {
+        const trust = G.suspectTrust.eleanor;
+        let speech = '', tag = '';
+        if (trust >= 2) {
+          tag = 'friendly';
+          speech = `"Victor changed after Felix came back into our lives. He became... secretive. Afraid." She wraps her arms around herself. "He came to me two weeks ago and said, 'If anything happens to me, look at who benefits most.' I didn't understand then." Her voice breaks. "I do now."`;
+          if (!G.knowledge.has('eleanor_warning')) {
+            G.addKnowledge('eleanor_warning');
+            G.addClue('victim_warned', 'Victor\'s Warning', 'Victor told Eleanor to "look at who benefits most" two weeks before his death. He suspected something.', 'clue');
+          }
+        } else if (trust === 1) {
+          tag = 'friendly';
+          speech = `"I keep thinking I should have seen it coming." She stares into the fog. "Victor was frightened of something in the last few weeks. He wouldn't tell me what." She finally looks at you. "I don't think it was an accident."`;
+        } else {
+          speech = `"I need a moment." Her voice is flat and formal. "Please."`;
+        }
+        G.suspectTrust.eleanor = Math.min(G.suspectTrust.eleanor + 1, 4);
+        let avail = ['garden_footprints'];
+        if (trust >= 1) avail.push('garden_eleanor_alibi');
+        if (trust >= 2) avail.push('garden_eleanor_secret');
+        avail.push('leave_garden');
+        return {
+          npc: { name: 'Eleanor Hargrove', tag, speech, remembered: G.loop > 1 && trust > 0 },
+          narration: '', actions: avail
+        };
+      }
+    },
+    garden_eleanor_alibi: {
+      label: 'Ask Eleanor about the evening',
+      cost: '~1 min',
+      available(G) { return G.suspectTrust.eleanor >= 1; },
+      run(G) {
+        if (!G.knowledge.has('eleanor_alibi')) {
+          G.addKnowledge('eleanor_alibi');
+          G.addClue('eleanor_alibi_note', 'Eleanor\'s Alibi', 'Eleanor was in her bedroom from 8pm, confirmed by Vera who brought tea. She did not go near the study.', 'loop');
+        }
+        return {
+          npc: { name: 'Eleanor Hargrove', tag: 'friendly', speech: `"I was in my bedroom. Vera brought me chamomile at eight. I didn't leave until I heard the commotion." She steadies herself. "I have nothing to hide."`, remembered: true },
+          narration: '', actions: ['garden_eleanor','garden_footprints','garden_eleanor_secret','leave_garden']
+        };
+      }
+    },
+    garden_eleanor_secret: {
+      label: 'Ask about Victor\'s business dealings',
+      cost: '~1 min',
+      available(G) { return G.suspectTrust.eleanor >= 2; },
+      run(G) {
+        G.addKnowledge('felix_deal_context');
+        return {
+          npc: { name: 'Eleanor Hargrove', tag: 'friendly', speech: `"Felix came to Victor three years ago, desperate. Victor lent him money to save his firm. But then Felix started skimming — diverting client funds. Victor discovered it six months ago." She exhales. "Victor was going to expose him. Go to the regulators. Felix would have lost everything — his firm, his freedom."`, remembered: true },
+          narration: '', actions: ['garden_eleanor','leave_garden']
+        };
+      }
+    },
+    garden_footprints: {
+      label: 'Examine the garden path',
+      cost: '~1 min',
+      available() { return true; },
+      run(G) {
+        let txt = '';
+        if (G.knowledge.has('footprints_seen')) {
+          txt = '<p><em>[You\'ve examined these before. Two sets of prints, one heavier, heading toward the east hedge.]</em></p>';
+        } else {
+          G.addKnowledge('footprints_seen');
+          G.addClue('garden_prints', 'Two Sets of Prints', 'Two distinct sets of footprints on the garden path — one with a distinctive heel pattern. They meet at the east hedge.', 'clue');
+          txt = '<p>The damp earth holds two clear sets of footprints. One lighter, delicate. One heavier — with a distinctive ridge in the right heel. They converge at the east hedge, then only one set returns.</p>';
+          txt += G.clueHTML('garden_prints', 'Footprint Evidence', 'Two people met at the east hedge. Only one set returns toward the house.');
+        }
+        return { narration: txt, actions: ['garden_eleanor','leave_garden'] };
+      }
+    },
+
+    // CLINIC
+    clinic_drwu: {
+      label: 'Speak with Dr. Wu',
+      cost: '~2 min',
+      available() { return true; },
+      run(G) {
+        const trust = G.suspectTrust.drwu;
+        let speech = '', tag = '';
+        if (G.knowledge.has('confronted_drwu') && trust < 2) {
+          tag = 'suspicious';
+          speech = `"I've answered all of your questions." Her calm is absolute. Rehearsed. "Victor's medical history is confidential. Whatever you think you know — you don't."`;
+        } else if (trust >= 2) {
+          tag = 'friendly';
+          speech = `She closes the door behind you. "I signed the death certificate. Cardiac arrest." Her voice is quiet. "But I had... doubts. I ran additional bloods. Off the record." She opens a drawer. "I found trace compounds. Consistent with plant alkaloid toxicity. I didn't report it because I was afraid."`;
+          if (!G.knowledge.has('drwu_secret_report')) {
+            G.addKnowledge('drwu_secret_report');
+            G.addKnowledge('murder_confirmed_medical');
+            G.addClue('drwu_report', 'Dr. Wu\'s Secret Report', 'Dr. Wu ran private blood tests. Found alkaloid toxicity — confirming poison. She concealed this from police out of fear.', 'clue');
+          }
+        } else {
+          speech = `She looks up from her files. "A tragic loss. Victor was in good health for his age." She folds her hands precisely. "A sudden cardiac event. These things happen." She holds your gaze a beat too long.`;
+        }
+        G.suspectTrust.drwu = Math.min(G.suspectTrust.drwu + 1, 4);
+        let avail = ['clinic_records'];
+        if (trust >= 1) avail.push('clinic_prescriptions');
+        if (trust >= 2 || G.knowledge.has('whiskey_tested')) avail.push('clinic_drwu_confront');
+        avail.push('leave_clinic');
+        return {
+          npc: { name: 'Dr. Sandra Wu', tag, speech, remembered: G.loop > 1 && trust > 0 },
+          narration: '', actions: avail
+        };
+      }
+    },
+    clinic_drwu_confront: {
+      label: 'Present the Aconitine evidence',
+      cost: '~1 min',
+      available(G) { return G.knowledge.has('whiskey_tested') && G.suspectTrust.drwu >= 1; },
+      run(G) {
+        G.addKnowledge('confronted_drwu');
+        G.addKnowledge('murder_confronted_drwu');
+        return {
+          npc: { name: 'Dr. Sandra Wu', tag: 'suspicious', speech: `She stares at you for a long moment. Something moves behind her eyes — not guilt, exactly. Fear. "You... understand the implications of what you're saying. If Victor was murdered, then whoever did this is still in that house." She takes a breath. "I need to know you understand that before I say anything more."`, remembered: true },
+          narration: '', actions: ['clinic_drwu','clinic_prescriptions','leave_clinic']
+        };
+      }
+    },
+    clinic_records: {
+      label: 'Browse medical records',
+      cost: '~2 min',
+      available() { return true; },
+      run(G) {
+        let txt = '<p>The filing cabinet is mostly locked. But an open folder on the desk catches your eye — a consultation record for <b>Felix Crane</b>, dated three weeks ago. Anxiety medication. And a note: <b>"Patient expressed fear of exposure. Do not disclose."</b></p>';
+        if (!G.knowledge.has('felix_anxiety_record')) {
+          G.addKnowledge('felix_anxiety_record');
+          G.addClue('felix_mental_record', 'Felix\'s Medical Record', 'Felix saw Dr. Wu 3 weeks ago. Anxiety medication. Note says "fear of exposure." Three weeks before Victor\'s death.', 'suspect');
+          txt += G.clueHTML('felix_mental_record', 'Felix\'s Consultation', 'Fear of exposure, 3 weeks before the murder. Felix knew something was coming.');
+        }
+        return { narration: txt, actions: ['clinic_drwu','clinic_prescriptions','leave_clinic'] };
+      }
+    },
+    clinic_prescriptions: {
+      label: 'Check the prescription log',
+      cost: '~1 min',
+      available(G) { return G.suspectTrust.drwu >= 1; },
+      run(G) {
+        let txt = '<p>The prescription log shows standard entries. But one stands out — an order for <b>Aconitum extract</b>, logged six weeks ago, marked as "for research purposes." The handwriting is not Dr. Wu\'s. It\'s different — angular, precise.</p>';
+        if (!G.knowledge.has('prescription_aconitine')) {
+          G.addKnowledge('prescription_aconitine');
+          G.addClue('prescription_log', 'Aconitine Prescription', 'Aconitine extract ordered 6 weeks ago under "research." Not in Dr. Wu\'s handwriting — who filled this out?', 'suspect');
+          txt += G.clueHTML('prescription_log', 'Suspicious Prescription', 'Aconitine ordered 6 weeks ago. Not Dr. Wu\'s handwriting. Premeditated.');
+        }
+        return { narration: txt, actions: ['clinic_drwu','leave_clinic'] };
+      }
+    },
+
+    // VAULT
+    vault_open: {
+      label: 'Enter the combination (4-7-2-9)',
+      cost: '~1 min',
+      available(G) { return G.knowledge.has('vault_code'); },
+      run(G) {
+        G.addKnowledge('vault_opened');
+        return {
+          narration: '<p>The lock clicks. The vault swings open. Inside: a small safe-box, a stack of photographs, and a folded document.</p>',
+          actions: ['vault_contract','vault_photos']
+        };
+      }
+    },
+    vault_contract: {
+      label: 'Read the document',
+      cost: '~1 min',
+      available(G) { return G.knowledge.has('vault_opened'); },
+      run(G) {
+        let txt = '';
+        if (G.knowledge.has('contract_read')) {
+          txt = '<p><em>[You\'ve read this before. The evidence is damning.]</em></p>';
+        }
+        txt += '<p>A legal document: a partnership agreement between Victor Hargrove and Felix Crane, signed four years ago. But attached is a newer document, dated eight months ago — a <b>dissolution clause</b> Victor had prepared. And a cover letter to the Financial Conduct Authority, ready to send. Victor had been building a case against Felix for financial fraud.</p>';
+        if (!G.knowledge.has('contract_read')) {
+          G.addKnowledge('contract_read');
+          G.addKnowledge('felix_fraud_confirmed');
+          G.addClue('fca_letter', 'FCA Complaint Letter', 'Victor had prepared a letter to regulators about Felix\'s fraud — ready to send. Felix would have known this was coming.', 'suspect');
+          txt += G.clueHTML('fca_letter', 'FCA Letter — Ready to Send', 'Victor was about to expose Felix for financial fraud. This letter would have ended Felix\'s career and freedom.');
+        }
+        return { narration: txt, actions: ['vault_photos','leave_vault'] };
+      }
+    },
+    vault_photos: {
+      label: 'Examine the photographs',
+      cost: '~1 min',
+      available(G) { return G.knowledge.has('vault_opened'); },
+      run(G) {
+        let txt = '';
+        if (!G.knowledge.has('photos_examined')) {
+          G.addKnowledge('photos_examined');
+          G.addKnowledge('felix_in_garden_photo');
+          G.addClue('garden_photo', 'Surveillance Photographs', 'Victor secretly photographed Felix and an unknown figure in the east garden. Dates match the week before Victor\'s death.', 'suspect');
+          txt = '<p>Surveillance photographs — taken from the study window. The subjects: <b>Felix Crane</b> and a figure you now recognize as a private courier, repeatedly, over three weeks. Victor was watching. Documenting.</p>';
+          txt += G.clueHTML('garden_photo', 'Victor\'s Surveillance Photos', 'Felix was meeting a courier repeatedly. Victor documented it. He knew.');
+        } else {
+          txt = '<p><em>[Felix, photographed in the east garden. Multiple times. Victor had been gathering evidence for months.]</em></p>';
+        }
+        return { narration: txt, actions: ['vault_contract','leave_vault'] };
+      }
+    },
+  },
+
+  // ── NAVIGATION ────────────────────────────────────────────────
+  navActions: {
+    leave_study:   (G) => G.goHome(),
+    leave_library: (G) => G.goHome(),
+    leave_kitchen: (G) => G.goHome(),
+    leave_garden:  (G) => G.goHome(),
+    leave_clinic:  (G) => G.goHome(),
+    leave_vault:   (G) => G.goHome(),
+  },
+
+  // ── HELPERS ───────────────────────────────────────────────────
+  addKnowledge(key) { this.knowledge.add(key); },
+
+  addClue(id, title, text, type) {
+    if (!this.knowledge.has('clue_' + id)) {
+      this.knowledge.add('clue_' + id);
+      this.renderNote(title, text, type);
+    }
+  },
+
+  clueHTML(id, title, text) {
+    const icons = { clue: '◆', suspect: '!', loop: '↺' };
+    return `<div class="clue-found"><div class="clue-icon">◆</div><div class="clue-text"><strong>CLUE FOUND — ${title.toUpperCase()}</strong>${text}</div></div>`;
+  },
+
+  addSuspicion(name, amt) {
+    this.suspectSuspicion[name] = Math.min((this.suspectSuspicion[name] || 0) + amt, 10);
+    this.renderSuspects();
+    this.updateConfidence();
+  },
+
+  computeConfidence() {
+    let score = 0;
+    const k = this.knowledge;
+    if (k.has('felix_debt_confirmed')) score += 10;
+    if (k.has('whiskey_tested')) score += 10;
+    if (k.has('felix_caught')) score += 15;
+    if (k.has('felix_motive_confirmed')) score += 15;
+    if (k.has('vera_witness')) score += 20;
+    if (k.has('felix_fraud_confirmed')) score += 15;
+    if (k.has('drwu_secret_report')) score += 10;
+    if (k.has('felix_in_garden_photo')) score += 10;
+    return Math.min(score, 100);
+  },
+
+  updateConfidence() {
+    const c = this.computeConfidence();
+    const el = document.getElementById('confidence-val');
+    el.textContent = c + '%';
+    el.className = 'bottom-value ' + (c >= 80 ? 'good' : c >= 50 ? 'accent' : c >= 25 ? 'warn' : '');
+    const btn = document.getElementById('accuse-btn');
+    if (c >= 60) {
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+    }
+  },
+
+  // ── RENDER ────────────────────────────────────────────────────
+  renderLocations() {
+    const cont = document.getElementById('map-container');
+    cont.innerHTML = '';
+    for (const [id, loc] of Object.entries(this.locations)) {
+      const div = document.createElement('div');
+      const isActive = this.currentLocation === id;
+      const isLocked = !loc.unlocked;
+      div.className = 'map-location' + (isActive ? ' active' : '') + (isLocked ? ' locked' : '') + (this.loopVisited(id) ? ' loc-visited' : '');
+      div.innerHTML = `<div class="loc-name">${loc.name}</div><div class="loc-hint">${isLocked ? '— LOCKED —' : loc.desc.substring(0, 42) + '...'}</div>`;
+      const clueCount = this.countNewCluesAt(id);
+      if (clueCount > 0) {
+        const badge = document.createElement('div');
+        badge.className = 'loc-badge new';
+        badge.textContent = clueCount;
+        div.appendChild(badge);
+      }
+      if (!isLocked) div.onclick = () => this.visitLocation(id);
+      cont.appendChild(div);
+    }
+  },
+
+  loopVisited(locId) {
+    return this.currentLoop_actions.some(a => a.startsWith(locId));
+  },
+
+  countNewCluesAt(locId) { return 0; }, // simplified
+
+  unlockLocation(id) {
+    this.locations[id].unlocked = true;
+    this.renderLocations();
+  },
+
+  renderSuspects() {
+    const row = document.getElementById('suspect-row');
+    row.innerHTML = '';
+    for (const [id, s] of Object.entries(this.suspects)) {
+      const susp = this.suspectSuspicion[id] || 0;
+      const trust = this.suspectTrust[id] || 0;
+      const div = document.createElement('div');
+      div.className = 'suspect-portrait' + (susp >= 5 ? ' suspect-hi' : '') + (trust >= 2 ? ' trust-built' : '');
+      div.innerHTML = `<div class="portrait-circle">${s.initials}</div><div class="portrait-name">${s.name}</div>`;
+      div.title = `${s.full} — ${s.role}`;
+      row.appendChild(div);
+    }
+  },
+
+  renderNote(title, text, type) {
+    const cont = document.getElementById('notes-container');
+    const empty = document.getElementById('notes-empty');
+    if (empty) empty.remove();
+    const card = document.createElement('div');
+    card.className = `note-card ${type}`;
+    card.innerHTML = `<div class="note-label">${type.toUpperCase()}</div><div class="note-content"><strong>${title}</strong><br>${text}</div>`;
+    cont.appendChild(card);
+  },
+
+  renderScene(data) {
+    const body = document.getElementById('scene-body');
+    body.innerHTML = '';
+    if (data.npc) {
+      const block = document.createElement('div');
+      block.className = 'npc-block';
+      let tagHTML = '';
+      if (data.npc.tag) tagHTML = `<span class="npc-memory-tag ${data.npc.tag}">${data.npc.tag.toUpperCase()}</span>`;
+      let remHTML = data.npc.remembered ? `<span class="npc-memory-tag">REMEMBERS YOU</span>` : '';
+      block.innerHTML = `<div class="npc-name">${data.npc.name} ${tagHTML} ${remHTML}</div><div class="npc-speech ${data.npc.remembered ? 'remembered' : ''}">"${data.npc.speech}"</div>`;
+      body.appendChild(block);
+    }
+    if (data.narration) {
+      const div = document.createElement('div');
+      div.className = 'narration';
+      div.innerHTML = data.narration;
+      body.appendChild(div);
+    }
+    // Render choices
+    const choices = document.getElementById('choices');
+    choices.innerHTML = '';
+    const avail = data.actions || [];
+    const labels = {
+      leave_study: '← Leave the study',
+      leave_library: '← Leave the library',
+      leave_kitchen: '← Leave the kitchen',
+      leave_garden: '← Leave the garden',
+      leave_clinic: '← Leave the clinic',
+      leave_vault: '← Leave the vault',
+    };
+    avail.forEach((actionId, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'choice-btn';
+      const a = this.actions[actionId] || this.navActions[actionId];
+      const label = labels[actionId] || (this.actions[actionId] ? this.actions[actionId].label : actionId);
+      const cost = this.actions[actionId] ? this.actions[actionId].cost : '';
+      const key = String.fromCharCode(65 + i);
+      btn.innerHTML = `<span class="choice-key">${key}</span>${label}${cost ? `<span class="choice-cost">${cost}</span>` : ''}`;
+      if (this.navActions[actionId]) {
+        btn.onclick = () => this.navActions[actionId](this);
+      } else {
+        btn.onclick = () => this.runAction(actionId);
+      }
+      choices.appendChild(btn);
+    });
+  },
+
+  visitLocation(id) {
+    if (this.gameOver) return;
+    const loc = this.locations[id];
+    if (!loc || !loc.unlocked) return;
+    this.currentLocation = id;
+    document.getElementById('scene-location').textContent = loc.subtitle.toUpperCase();
+    document.getElementById('scene-title').textContent = loc.name;
+    this.renderLocations();
+    // Show initial actions
+    const body = document.getElementById('scene-body');
+    body.innerHTML = `<div class="narration">${loc.desc}</div>`;
+    const choices = document.getElementById('choices');
+    choices.innerHTML = '';
+    const leaveName = `leave_${id}`;
+    const actionIds = [...loc.actions.filter(a => {
+      const action = this.actions[a];
+      return action && (typeof action.available !== 'function' || action.available(this));
+    }), leaveName];
+    const labelsNav = { [`leave_${id}`]: `← Leave` };
+    actionIds.forEach((actionId, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'choice-btn';
+      const label = labelsNav[actionId] || (this.actions[actionId] ? this.actions[actionId].label : actionId);
+      const cost = this.actions[actionId] ? this.actions[actionId].cost : '';
+      const key = String.fromCharCode(65 + i);
+      btn.innerHTML = `<span class="choice-key">${key}</span>${label}${cost ? `<span class="choice-cost">${cost}</span>` : ''}`;
+      if (this.navActions[actionId]) {
+        btn.onclick = () => this.navActions[actionId](this);
+      } else {
+        btn.onclick = () => this.runAction(actionId);
+      }
+      choices.appendChild(btn);
+    });
+    document.getElementById('actions-left').textContent = (this.maxActions - this.actionsThisLoop) + ' remaining';
+  },
+
+  runAction(actionId) {
+    if (this.gameOver) return;
+    const action = this.actions[actionId];
+    if (!action) return;
+    if (this.actionsThisLoop >= this.maxActions || this.time <= 0) {
+      this.showModal('No Time Left', 'You\'ve used all your actions this loop. The time resets momentarily...', [{ label: 'Accept', cb: () => this.resetLoop() }]);
+      return;
+    }
+    this.actionsThisLoop++;
+    this.currentLoop_actions.push(actionId);
+    // Deduct time based on action cost string
+    const costStr = action.cost || '~1 min';
+    let deduct = 90;
+    if (costStr.includes('30 sec')) deduct = 30;
+    else if (costStr.includes('1 min')) deduct = 60;
+    else if (costStr.includes('2 min')) deduct = 120;
+    this.time = Math.max(0, this.time - deduct);
+    this.updateTimerUI();
+    document.getElementById('actions-left').textContent = (this.maxActions - this.actionsThisLoop) + ' remaining';
+    const result = action.run(this);
+    this.renderScene(result);
+    this.updateConfidence();
+    if (this.actionsThisLoop >= this.maxActions || this.time <= 0) {
+      setTimeout(() => {
+        if (!this.gameOver) this.triggerLoopEnd();
+      }, 2000);
+    }
+  },
+
+  goHome() {
+    this.currentLocation = null;
+    document.getElementById('scene-location').textContent = 'HARGROVE ESTATE';
+    document.getElementById('scene-title').textContent = 'Where will you go?';
+    const body = document.getElementById('scene-body');
+    body.innerHTML = `<div class="narration">You stand in the entrance hall. The clock on the mantle reads <b>${this.formatTime(this.time)}</b>. Every second brings the loop closer to its end.<br><br>Your notes hold what you've learned. The killer is still here — and only you know you've done this before.</div>`;
+    const choices = document.getElementById('choices');
+    choices.innerHTML = '';
+    this.renderLocations();
+  },
+
+  // ── TIMER ─────────────────────────────────────────────────────
+  startTimer() {
+    clearInterval(this.timerInterval);
+    this.timerInterval = setInterval(() => {
+      if (this.gameOver) { clearInterval(this.timerInterval); return; }
+      this.time = Math.max(0, this.time - 1);
+      this.updateTimerUI();
+      if (this.time <= 0) { clearInterval(this.timerInterval); this.triggerLoopEnd(); }
+    }, 1000);
+  },
+
+  updateTimerUI() {
+    const bar = document.getElementById('timer-bar');
+    const txt = document.getElementById('timer-text');
+    const pct = (this.time / 600) * 100;
+    bar.style.width = pct + '%';
+    txt.textContent = this.formatTime(this.time);
+    if (this.time <= 60) {
+      bar.className = 'critical';
+      txt.className = 'critical';
+    }
+  },
+
+  formatTime(s) {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${sec.toString().padStart(2,'0')}`;
+  },
+
+  triggerLoopEnd() {
+    clearInterval(this.timerInterval);
+    this.loopHistory.push({ loop: this.loop, actions: [...this.currentLoop_actions] });
+    const flash = document.getElementById('loop-flash');
+    flash.style.opacity = '0.8';
+    setTimeout(() => {
+      flash.style.opacity = '0';
+      this.resetLoop();
+    }, 400);
+  },
+
+  resetLoop() {
+    this.loop++;
+    this.time = 600;
+    this.actionsThisLoop = 0;
+    this.currentLoop_actions = [];
+    this.currentLocation = null;
+    document.getElementById('loop-num').textContent = this.loop;
+    document.getElementById('timer-bar').className = '';
+    document.getElementById('timer-text').className = '';
+    this.updateTimerUI();
+    this.renderLocations();
+    this.renderSuspects();
+    clearInterval(this.timerInterval);
+    this.startTimer();
+    this.showLoopReset();
+  },
+
+  showLoopReset() {
+    const body = document.getElementById('scene-body');
+    const choices = document.getElementById('choices');
+    document.getElementById('scene-location').textContent = 'LOOP ' + this.loop;
+    document.getElementById('scene-title').textContent = 'The loop resets.';
+    body.innerHTML = `
+      <div class="narration"><em>You wake in the entrance hall. Again.</em></div>
+      <div class="narration">The clock reads 9:47pm. The fog is back. The voices are where they always are. Victor Hargrove will die in ten minutes unless you act.<br><br>
+      But you <b>remember everything</b>. Every conversation. Every note. Every face that looked at you strangely because they half-remembered you too.</div>
+      ${this.loop >= 3 ? `<div class="narration" style="color:var(--accent)">You've been here ${this.loop - 1} times before. The truth is within reach.</div>` : ''}
+    `;
+    choices.innerHTML = `<button class="choice-btn" onclick="G.goHome()"><span class="choice-key">A</span>Enter the estate</button>`;
+  },
+
+  // ── ACCUSE ────────────────────────────────────────────────────
+  accusePrompt() {
+    const attemptsLeft = 2 - this.accusationAttempts;
+    const warn = attemptsLeft === 1
+      ? `<p style="color:var(--danger);font-size:13px">⚠ This is your <b>last attempt</b>. A wrong accusation here ends the investigation permanently.</p>`
+      : `<p style="color:var(--accent3);font-size:13px">You have <b>${attemptsLeft} accusations</b> remaining. A wrong accusation cannot be undone.</p>`;
+
+    let suspectBtns = Object.entries(this.suspects).map(([id, s]) => {
+      const susp = this.suspectSuspicion[id] || 0;
+      const trust = this.suspectTrust[id] || 0;
+      const hint = susp >= 5 ? ' 🔴' : trust >= 2 ? ' 🟢' : '';
+      return `<button class="modal-btn ${susp >= 5 ? 'danger-btn' : ''}" onclick="G.accuse('${id}')">${s.full}<span style="font-size:10px;color:var(--text3);margin-left:8px">${s.role}</span>${hint}</button>`;
+    }).join('');
+
+    this.showModal(
+      'File an Accusation',
+      `LOOP ${this.loop} — ${2 - this.accusationAttempts} ATTEMPT${attemptsLeft !== 1 ? 'S' : ''} REMAINING`,
+      null,
+      `<p>Name the person you believe murdered Victor Hargrove. The investigation will act on your accusation immediately.</p>${warn}`,
+      suspectBtns + `<button class="modal-btn" onclick="G.closeModal()">CANCEL</button>`
+    );
+  },
+
+  accuse(suspectId) {
+    this.closeModal();
+    this.accusationAttempts++;
+    const s = this.suspects[suspectId];
+
+    if (s.guilty) {
+      clearInterval(this.timerInterval);
+      this.gameOver = true;
+      setTimeout(() => this.showEndScreen('correct', suspectId), 300);
+    } else {
+      // Wrong accusation
+      if (this.accusationAttempts >= 2) {
+        clearInterval(this.timerInterval);
+        this.gameOver = true;
+        setTimeout(() => this.showEndScreen('fired', suspectId), 300);
+      } else {
+        // One attempt left — show consequence and continue
+        setTimeout(() => {
+          this.showModal(
+            'Wrong Person.',
+            'ACCUSATION REJECTED',
+            [{ label: 'CONTINUE INVESTIGATING', cb: () => {} }],
+            `<p><b>${s.full}</b> was questioned and released within the hour. Their alibi checked out.</p>
+             <p>Word travels fast in a house like this. The real killer now knows you're close — and wrong. They've had time to cover their tracks.</p>
+             <p style="color:var(--danger)">You have <b>one accusation remaining</b>. Use it wisely.</p>`
+          );
+          // Penalty: NPCs get more guarded, suspicion redistributes
+          this.addSuspicion(suspectId, -3);
+          this.knowledge.add('made_wrong_accusation');
+          this.updateAccuseBtn();
+        }, 300);
+      }
+    }
+  },
+
+  updateAccuseBtn() {
+    const btn = document.getElementById('accuse-btn');
+    const left = 2 - this.accusationAttempts;
+    if (left <= 0 || this.gameOver) {
+      btn.style.opacity = '0.3';
+      btn.style.cursor = 'not-allowed';
+      btn.textContent = 'ACCUSE (0 left)';
+      btn.onclick = null;
+    } else {
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+      btn.textContent = `ACCUSE (${left} left)`;
+      btn.onclick = () => G.accusePrompt();
+    }
+  },
+
+  // Determine ending tier based on evidence gathered
+  getEndingTier() {
+    const k = this.knowledge;
+    const tier = {
+      // Tier 6 — Perfect: full conspiracy exposed, coverup revealed, all threads tied
+      perfect: k.has('felix_fraud_confirmed') && k.has('vera_witness') && k.has('drwu_secret_report') && k.has('felix_in_garden_photo') && k.has('vault_opened') && k.has('victim_warned'),
+      // Tier 5 — Full case: motive + method + witness + vault
+      fullCase: k.has('felix_fraud_confirmed') && k.has('vera_witness') && k.has('vault_opened'),
+      // Tier 4 — Strong: motive + method + one corroborating witness
+      strong: k.has('felix_motive_confirmed') && k.has('whiskey_tested') && (k.has('vera_witness') || k.has('drwu_secret_report')),
+      // Tier 3 — Circumstantial: motive + some physical evidence
+      circumstantial: k.has('felix_debt_confirmed') && k.has('whiskey_tested') && k.has('felix_caught'),
+      // Tier 2 — Gut: just suspicion and fragments
+      gut: k.has('torn_note') || k.has('felix_debt_confirmed'),
+    };
+    if (tier.perfect) return 'perfect';
+    if (tier.fullCase) return 'fullCase';
+    if (tier.strong) return 'strong';
+    if (tier.circumstantial) return 'circumstantial';
+    if (tier.gut) return 'gut';
+    return 'blind';
+  },
+
+  showEndScreen(type, suspectId) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    const box = document.createElement('div');
+    const suspect = this.suspects[suspectId];
+    const loops = this.loop;
+    const loopWord = loops === 1 ? '1 loop' : loops + ' loops';
+    const conf = this.computeConfidence();
+    const tier = this.getEndingTier();
+
+    const endings = {
+      perfect: {
+        subtitle: '★ PERFECT RESOLUTION',
+        title: 'The whole truth.',
+        color: 'var(--accent2)',
+        body: `
+          <p>Felix Crane was arrested before midnight. Not just for murder — for two years of systematic fraud that had bled his clients dry. Victor had spent months building an airtight case, and you found every piece of it.</p>
+          <p>Dr. Wu came forward with her toxicology report. The undisclosed blood tests confirmed Aconitine poisoning beyond any reasonable doubt. Her courage, once found, proved unshakable on the stand.</p>
+          <p>Vera's testimony placed Felix at the drinks cabinet at 9:31pm. Surveillance photos from Victor's vault showed the courier meetings — Felix had been sourcing the poison for six weeks.</p>
+          <p>The FCA received Victor's letter posthumously. Felix's firm was dissolved. Four defrauded clients recovered partial losses. Two of his associates were also charged.</p>
+          <p>Eleanor Hargrove inherited the estate. She donated the library to the local university in Victor's name.</p>
+          <p>Vera was given a permanent home and a generous settlement. She never had to be afraid again.</p>
+          <p style="color:var(--accent2);font-style:italic;margin-top:16px">You didn't just solve the murder. You dismantled everything Felix had built on other people's suffering. The loop broke cleanly — and this time, it stayed broken.</p>
+        `
+      },
+      fullCase: {
+        subtitle: 'CASE CLOSED — FULL EVIDENCE',
+        title: 'Justice, complete.',
+        color: 'var(--accent)',
+        body: `
+          <p>Felix Crane was arrested at the estate that same night. The evidence was comprehensive: Vera's eyewitness account, the vault documents, the Aconitine in Victor's glass.</p>
+          <p>The trial lasted four days. The jury deliberated for less than two hours.</p>
+          <p>Felix's financial fraud was exposed during proceedings — £240,000 in unpaid debt, client funds diverted, and Victor's FCA complaint read aloud in court.</p>
+          <p>He received a life sentence. He never showed remorse.</p>
+          <p style="color:var(--text3)">A few threads remained loose — Dr. Wu's hidden report never made it into evidence. The courier Felix used was never identified. Small gaps, but the core held.</p>
+          <p style="color:var(--accent);font-style:italic;margin-top:16px">The loop dissolved the moment handcuffs clicked. You'd done enough. More than enough.</p>
+        `
+      },
+      strong: {
+        subtitle: 'CASE CLOSED — STRONG EVIDENCE',
+        title: 'He goes to prison.',
+        color: 'var(--accent)',
+        body: `
+          <p>Your accusation was confident and largely correct. Felix Crane was detained for questioning — and the evidence you'd assembled held under scrutiny.</p>
+          <p>The whiskey glass, the debt records, Felix's own half-confession. It was enough for an arrest. Barely enough for a conviction.</p>
+          <p>His lawyers fought hard. They nearly got him off on procedural grounds — the vault evidence was gathered irregularly and partially excluded.</p>
+          <p>Felix received a reduced sentence: twelve years for manslaughter, the fraud charges dropped due to missing documentation.</p>
+          <p style="color:var(--text3)">Somewhere in the gaps, a thread went unpulled. The full picture — the fraud, the FCA letter, the courier — never came to light. Felix walks in eight years, still wealthy from hidden accounts.</p>
+          <p style="color:var(--accent);font-style:italic;margin-top:16px">The loop ended. But you can't shake the feeling you left something on the table.</p>
+        `
+      },
+      circumstantial: {
+        subtitle: 'CASE CLOSED — WEAK EVIDENCE',
+        title: 'A conviction. Of sorts.',
+        color: 'var(--accent3)',
+        body: `
+          <p>Felix was arrested on the strength of your accusation and the fragments you'd gathered — a torn note, a suspicious debt, a poisoned glass with no clear chain of custody.</p>
+          <p>The case was weak. His solicitors knew it. The prosecution knew it.</p>
+          <p>Felix accepted a plea deal: accessory after the fact, two years suspended. He claimed Victor's death was accidental — that he'd only covered it up out of panic. The court had no hard evidence to contradict him.</p>
+          <p style="color:var(--danger)">He walked out of the courthouse six months later, wealthy, connected, and entirely free. Eleanor received nothing — the estate was tied up in legal proceedings for years.</p>
+          <p style="color:var(--text3)">Vera never spoke publicly. She left the estate quietly, with a single suitcase.</p>
+          <p style="color:var(--accent3);font-style:italic;margin-top:16px">The loop ended — but it feels like the wrong ending. You named the right man. You just couldn't prove it.</p>
+        `
+      },
+      gut: {
+        subtitle: 'RUSHED ACCUSATION',
+        title: 'A guess. And it showed.',
+        color: 'var(--accent3)',
+        body: `
+          <p>Felix Crane was brought in for questioning based on your accusation. His lawyers arrived within the hour.</p>
+          <p>Without corroborating evidence, the investigation stalled. A torn note and a financial dispute — Felix's barrister dismissed both in a single paragraph. The case was dropped.</p>
+          <p style="color:var(--danger)">Felix left the police station and drove back to the estate. That night, Victor's study was cleaned thoroughly. The vault was emptied. The whiskey glass disappeared.</p>
+          <p>The official verdict remained: cardiac arrest.</p>
+          <p style="color:var(--text3)">Six months later, Felix absorbed Hargrove Shipping into his own firm. Eleanor contested the acquisition for two years and lost.</p>
+          <p style="color:var(--accent3);font-style:italic;margin-top:16px">The loop ended. But the truth didn't. Somewhere, Felix Crane is having a very good year — because you moved too fast.</p>
+        `
+      },
+      blind: {
+        subtitle: 'ACCUSATION WITH NO EVIDENCE',
+        title: 'You had nothing.',
+        color: 'var(--danger)',
+        body: `
+          <p>Your accusation was made without evidence. The police questioned Felix briefly and released him within two hours. His alibi was solid — or well-constructed.</p>
+          <p>The investigation was quietly shelved. Victor Hargrove's death remained officially a cardiac event.</p>
+          <p style="color:var(--danger)">Felix attended the funeral. He gave a eulogy. He cried.</p>
+          <p style="color:var(--text3)">You watched it from the back of the church, knowing what you know. Unable to prove any of it.</p>
+          <p style="color:var(--danger);font-style:italic;margin-top:16px">The loop collapsed — not because you broke it, but because it gave up on you.</p>
+        `
+      },
+      fired: {
+        subtitle: 'INVESTIGATION TERMINATED',
+        title: 'Two strikes. You\'re out.',
+        color: 'var(--danger)',
+        body: `
+          <p>Your second accusation — <b>${suspect ? suspect.full : 'an innocent person'}</b> — proved as wrong as your first.</p>
+          <p>The investigation was handed to a different team. You were formally removed from the case, your credibility destroyed by two failed accusations in a single night.</p>
+          <p style="color:var(--danger)">Felix Crane was never charged. The file was quietly closed six weeks later, reclassified as natural causes. His name never appeared in any official report.</p>
+          <p style="color:var(--text3)">Eleanor Hargrove sold the estate within the year. She never understood what happened to her husband.</p>
+          <p>Vera left. Dr. Wu kept her secret. And Felix — Felix is fine.</p>
+          <p style="color:var(--danger);font-style:italic;margin-top:16px">The loop didn't break. It just stopped giving you another chance.</p>
+        `
+      }
+    };
+
+    const e = type === 'fired' ? endings.fired : (endings[tier] || endings.blind);
+    box.className = `modal-box end-screen`;
+    box.innerHTML = `
+      <div class="modal-subtitle" style="color:${e.color}">${e.subtitle}</div>
+      <div class="modal-title" style="color:${e.color}">${e.title}</div>
+      <div style="display:flex;gap:24px;margin:12px 0 16px;font-family:var(--mono);font-size:11px;color:var(--text3)">
+        <span>LOOPS: <span style="color:var(--text)">${loopWord}</span></span>
+        <span>CONFIDENCE: <span style="color:var(--text)">${conf}%</span></span>
+        <span>CLUES: <span style="color:var(--text)">${[...this.knowledge].filter(k=>k.startsWith('clue_')).length}</span></span>
+      </div>
+      <div class="modal-body" style="max-height:320px;overflow-y:auto">${e.body}</div>
+      <button class="modal-btn primary" onclick="location.reload()">PLAY AGAIN</button>
+      ${type !== 'fired' && tier !== 'perfect' ? `<button class="modal-btn" onclick="location.reload()" style="margin-top:4px">TRY FOR A BETTER ENDING</button>` : ''}
+    `;
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+  },
+
+  // ── MODALS ────────────────────────────────────────────────────
+  showModal(title, subtitle, btns, extraBody, customBtns) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.id = 'active-modal';
+    const box = document.createElement('div');
+    box.className = 'modal-box';
+    let btnHTML = customBtns || (btns ? btns.map(b => `<button class="modal-btn" onclick="${b.cb ? '' : ''}">${b.label}</button>`).join('') : '');
+    box.innerHTML = `
+      <div class="modal-subtitle">${subtitle || ''}</div>
+      <div class="modal-title">${title}</div>
+      ${extraBody ? `<div class="modal-body">${extraBody}</div>` : ''}
+      <div>${btnHTML}</div>
+    `;
+    if (btns) {
+      const buttons = box.querySelectorAll('.modal-btn');
+      btns.forEach((b, i) => { if (b.cb) buttons[i].onclick = () => { this.closeModal(); b.cb(); }; });
+    }
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+  },
+
+  closeModal() {
+    const m = document.getElementById('active-modal');
+    if (m) m.remove();
+  },
+
+  showHelp() {
+    this.showModal(
+      'How to Play',
+      'TIME-LOOP INVESTIGATION',
+      [{ label: 'GOT IT', cb: () => {} }],
+      `<p>You have <b>10 minutes</b> (6 actions) each loop to investigate Victor Hargrove's murder. When time runs out, the loop resets — but <b>all your notes and knowledge persist</b>.</p>
+      <p>NPCs have <b>memory</b>: talk to them repeatedly across loops and they'll trust you more — or grow suspicious of you.</p>
+      <p>Gather enough evidence to identify the killer and make your <b>ACCUSE</b> — but choose wisely. A false accusation is permanent.</p>
+      <p style="color:var(--accent3)">Tip: Build trust with Vera and Felix early. The vault holds the most critical evidence.</p>`
+    );
+  },
+
+  showIntro() {
+    this.showModal(
+      'The Hargrove Incident',
+      'NOVEMBER 3RD, 9:47PM',
+      [{ label: 'BEGIN THE LOOP', cb: () => this.goHome() }],
+      `<p>Victor Hargrove, shipping magnate and patriarch of the estate, has been found dead in his study. Official cause: cardiac arrest.</p>
+      <p>You know better. You've seen him die before. You've watched it happen again and again — and every loop, you get closer to the truth.</p>
+      <p>You have <b>ten minutes</b> before the loop resets. Information is all you can keep. Use it well.</p>
+      <p style="color:var(--text3);font-style:italic">Suspects: Eleanor Hargrove, Dr. Sandra Wu, Felix Crane, Vera Solano.</p>`
+    );
+  },
+
+  // ── INIT ──────────────────────────────────────────────────────
+  init() {
+    this.renderLocations();
+    this.renderSuspects();
+    this.updateTimerUI();
+    this.updateAccuseBtn();
+    this.startTimer();
+    document.getElementById('scene-location').textContent = 'HARGROVE ESTATE';
+    document.getElementById('scene-title').textContent = 'Loop 1 begins';
+    document.getElementById('scene-body').innerHTML = '';
+    document.getElementById('choices').innerHTML = '';
+    setTimeout(() => this.showIntro(), 400);
+  }
+};
+
+const G = GAME;
+window.onload = () => G.init();
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  const choices = document.querySelectorAll('.choice-btn');
+  const idx = e.key.toUpperCase().charCodeAt(0) - 65;
+  if (idx >= 0 && idx < choices.length) choices[idx].click();
+});
+</script>
+</body>
+</html>
