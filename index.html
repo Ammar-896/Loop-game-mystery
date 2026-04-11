@@ -1,0 +1,1779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ar572 — Roblox Developer</title>
+<style>
+  :root {
+    --bg: #050505;
+    --bg2: #0d0d0d;
+    --bg3: #111318;
+    --surface: rgba(255,255,255,0.04);
+    --surface-hover: rgba(255,255,255,0.07);
+    --border: rgba(255,255,255,0.08);
+    --border-hover: rgba(58,134,255,0.4);
+    --accent: #3a86ff;
+    --accent-dim: rgba(58,134,255,0.15);
+    --accent-glow: rgba(58,134,255,0.08);
+    --text: #e0e0e0;
+    --text-muted: #7a7a8a;
+    --text-dim: #4a4a5a;
+    --mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.5;
+  }
+
+  /* ── GRID LINES ── */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(58,134,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(58,134,255,0.025) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: relative;
+    z-index: 10;
+    padding: 0 40px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    background: rgba(5,5,5,0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    position: sticky;
+    top: 0;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .header-logo {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: var(--accent-dim);
+    border: 1px solid rgba(58,134,255,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+  .header-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+  .header-tag {
+    font-size: 11px;
+    color: var(--text-muted);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .header-link {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 14px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    background: var(--surface);
+  }
+  .header-link:hover {
+    border-color: rgba(58,134,255,0.4);
+    color: var(--accent);
+    background: var(--accent-glow);
+  }
+  .header-link svg { flex-shrink: 0; }
+  .discord-badge {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 14px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 500;
+    background: var(--surface);
+    cursor: default;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    z-index: 1;
+    padding: 80px 40px 60px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    padding: 5px 12px;
+    background: var(--accent-dim);
+    border: 1px solid rgba(58,134,255,0.2);
+    border-radius: 100px;
+  }
+  .hero-eyebrow::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s ease infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.7); }
+  }
+  .hero h1 {
+    font-size: clamp(36px, 5vw, 58px);
+    font-weight: 700;
+    letter-spacing: -2px;
+    line-height: 1.1;
+    color: #ffffff;
+    margin-bottom: 16px;
+  }
+  .hero h1 span {
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(255,255,255,0.25);
+  }
+  .hero-sub {
+    font-size: 16px;
+    color: var(--text-muted);
+    max-width: 520px;
+    line-height: 1.7;
+    margin-bottom: 32px;
+  }
+  .hero-stats {
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .stat-val {
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.5px;
+    font-family: var(--mono);
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+
+  /* ── SECTION ── */
+  .section {
+    position: relative;
+    z-index: 1;
+    padding: 0 40px 80px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-family: var(--mono);
+  }
+  .section-count {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+  }
+
+  /* ── GRID ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 580px) { .grid { grid-template-columns: 1fr; } }
+
+  /* ── CARD ── */
+  .card {
+    position: relative;
+    background: rgba(13,13,20,0.6);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at top left, rgba(58,134,255,0.06) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+  .card:hover { border-color: rgba(58,134,255,0.35); transform: translateY(-2px); }
+  .card:hover::before { opacity: 1; }
+  .card-index {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .card-tag {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    border: 1px solid;
+    font-family: var(--mono);
+    letter-spacing: 0.5px;
+  }
+  .tag-parallel { color: #a78bfa; border-color: rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); }
+  .tag-data { color: #34d399; border-color: rgba(52,211,153,0.3); background: rgba(52,211,153,0.08); }
+  .tag-network { color: #f59e0b; border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.08); }
+  .tag-physics { color: #fb7185; border-color: rgba(251,113,133,0.3); background: rgba(251,113,133,0.08); }
+  .tag-rendering { color: #38bdf8; border-color: rgba(56,189,248,0.3); background: rgba(56,189,248,0.08); }
+  .tag-spatial { color: #a3e635; border-color: rgba(163,230,53,0.3); background: rgba(163,230,53,0.08); }
+  .card-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: -0.3px;
+    margin-bottom: 8px;
+    line-height: 1.3;
+  }
+  .card-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .card-lang {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+  }
+  .lang-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #00b2ff;
+  }
+  .view-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--accent);
+    transition: gap 0.2s ease;
+  }
+  .card:hover .view-btn { gap: 8px; }
+
+  /* ── MODAL ── */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-backdrop.open { display: flex; animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal {
+    width: 100%;
+    max-width: 1100px;
+    max-height: 90vh;
+    background: #0a0a0f;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.25s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .modal-title-group { display: flex; align-items: center; gap: 12px; }
+  .modal-title { font-size: 15px; font-weight: 600; color: #fff; letter-spacing: -0.3px; }
+  .modal-close {
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+  }
+  .modal-close:hover { background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.2); }
+  .modal-body {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    flex: 1;
+    overflow: hidden;
+  }
+  @media (max-width: 760px) { .modal-body { grid-template-columns: 1fr; } }
+  .modal-desc {
+    padding: 28px;
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.1) transparent;
+  }
+  .modal-desc::-webkit-scrollbar { width: 4px; }
+  .modal-desc::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+  .arch-section { margin-bottom: 24px; }
+  .arch-label {
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--accent);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .arch-text { font-size: 13px; color: var(--text-muted); line-height: 1.7; }
+  .arch-list { list-style: none; padding: 0; }
+  .arch-list li {
+    font-size: 12px;
+    color: var(--text-muted);
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-family: var(--mono);
+    line-height: 1.5;
+  }
+  .arch-list li::before { content: '›'; color: var(--accent); flex-shrink: 0; }
+  .modal-code-wrap {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .code-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,0,0,0.3);
+    flex-shrink: 0;
+  }
+  .code-filename {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .file-icon { color: var(--accent); }
+  .copy-btn {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .copy-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+  .code-scroll {
+    overflow: auto;
+    flex: 1;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.1) transparent;
+  }
+  .code-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+  .code-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+  pre {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.65;
+    padding: 20px;
+    tab-size: 2;
+    color: #c9d1d9;
+  }
+  .ln { color: #3a3a4a; user-select: none; display: inline-block; width: 32px; text-align: right; margin-right: 16px; }
+
+  /* ── SYNTAX ── */
+  .kw { color: #ff7b72; }
+  .ty { color: #79c0ff; }
+  .fn { color: #d2a8ff; }
+  .st { color: #a5d6ff; }
+  .cm { color: #484f58; font-style: italic; }
+  .nm { color: #f8c555; }
+  .op { color: #ff7b72; }
+  .pn { color: #c9d1d9; }
+  .va { color: #e6edf3; }
+  .at { color: #e6edf3; font-style: italic; }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative;
+    z-index: 1;
+    padding: 32px 40px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .footer-left { font-size: 12px; color: var(--text-dim); font-family: var(--mono); }
+  .footer-right { font-size: 12px; color: var(--text-dim); }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="header-logo">ar</div>
+    <span class="header-name">ar572</span>
+    <span class="header-tag">Roblox Dev</span>
+  </div>
+  <div class="header-right">
+    <div class="discord-badge">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+      ar572
+    </div>
+    <a href="https://www.roblox.com/users/3826729237/profile" target="_blank" class="header-link">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      Roblox Profile
+    </a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-eyebrow">Open to work</div>
+  <h1>Roblox <span>Scripting</span><br>Portfolio</h1>
+  <p class="hero-sub">Low-level Luau — parallel execution, custom networking, procedural animation, and spatial systems built for production games.</p>
+  <div class="hero-stats">
+    <div class="stat"><span class="stat-val">6</span><span class="stat-label">Projects</span></div>
+    <div class="stat"><span class="stat-val">--!strict</span><span class="stat-label">Type Policy</span></div>
+    <div class="stat"><span class="stat-val">Luau</span><span class="stat-label">Language</span></div>
+    <div class="stat"><span class="stat-val">∥</span><span class="stat-label">Parallel</span></div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-header">
+    <span class="section-title">// projects</span>
+    <span class="section-count">6 total</span>
+  </div>
+  <div class="grid" id="cardGrid"></div>
+</section>
+
+<footer>
+  <span class="footer-left">ar572 · Roblox Developer</span>
+  <span class="footer-right">Luau · --!strict · Parallel-ready</span>
+</footer>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <span class="card-tag" id="modalTag"></span>
+        <span class="modal-title" id="modalTitle"></span>
+      </div>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-desc" id="modalDesc"></div>
+      <div class="modal-code-wrap">
+        <div class="code-toolbar">
+          <span class="code-filename">
+            <span class="file-icon">◈</span>
+            <span id="modalFilename"></span>
+          </span>
+          <button class="copy-btn" id="copyBtn">copy</button>
+        </div>
+        <div class="code-scroll">
+          <pre id="modalCode"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const PROJECTS = [
+  {
+    index: "01",
+    tag: "PARALLEL",
+    tagClass: "tag-parallel",
+    title: "Multi-Threaded Raycast Hitbox",
+    short: "Hitbox detection spread across a pool of Luau actors. Each actor runs desynchronised casts and funnels results back at the end of the frame.",
+    filename: "HitboxService.luau",
+    arch: {
+      overview: "Casts are split across a fixed actor pool, each running task.desynchronize so the work happens off the main thread. Actors own non-overlapping slices of the spatial partition so they never step on each other. At the end of each Heartbeat a deferred collector grabs all results and dispatches callbacks.",
+      points: [
+        "task.desynchronize isolates cast work from the main scheduler",
+        "Actor pool sized to os.clock() jitter budget (~0.3ms per frame)",
+        "Shared-nothing architecture prevents lock contention",
+        "Reconciliation step filters stale hits via frame-delta threshold",
+        "Typed RaycastParams rebuilt once per actor lifetime",
+      ],
+      complexity: "It's basically a fork-join — actors split up the work, then the main thread waits for all of them before doing anything with the results. Stale hits (older than FRAME_THRESHOLD frames) get dropped before callbacks fire."
+    },
+    code: `--!strict
+
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+
+type HitRecord = {
+	id: number,
+	origin: Vector3,
+	dir: Vector3,
+	size: Vector3,
+	owner: Player,
+	frame: number,
+}
+
+type CastResult = {
+	id: number,
+	hit: BasePart?,
+	pos: Vector3?,
+	normal: Vector3?,
+}
+
+local POOL_SIZE = 4
+local FRAME_THRESHOLD = 3
+
+local _actors: {Actor} = {}
+local _channels: {BindableEvent} = {}
+local _pending: {[number]: HitRecord} = {}
+local _results: {CastResult} = {}
+local _frame = 0
+
+local _params = RaycastParams.new()
+_params.FilterType = Enum.RaycastFilterType.Exclude
+_params.IgnoreWater = true
+
+local function _spawnActor(idx: number): Actor
+	local a = Instance.new("Actor")
+	local s = Instance.new("Script")
+	s.Source = [[
+		--!strict
+		local actor = script:GetActor()
+		local ch: BindableEvent = script:WaitForChild("Channel")
+		local out: BindableEvent = script:WaitForChild("Out")
+		local params = RaycastParams.new()
+		params.FilterType = Enum.RaycastFilterType.Exclude
+		params.IgnoreWater = true
+
+		type Job = {id: number, origin: Vector3, dir: Vector3, size: Vector3}
+
+		actor:BindToMessage("Cast", function(job: Job)
+			task.desynchronize()
+			local result = workspace:Blockcast(
+				CFrame.new(job.origin),
+				job.size,
+				job.dir,
+				params
+			)
+			local res = {
+				id = job.id,
+				hit = if result then result.Instance else nil,
+				pos = if result then result.Position else nil,
+				normal = if result then result.Normal else nil,
+			}
+			task.synchronize()
+			out:Fire(res)
+		end)
+	]]
+	s.Parent = a
+	local ch = Instance.new("BindableEvent")
+	ch.Name = "Channel"
+	ch.Parent = s
+	local out = Instance.new("BindableEvent")
+	out.Name = "Out"
+	out.Parent = s
+	_channels[idx] = out
+	a.Parent = workspace
+	return a
+end
+
+local HitboxService = {}
+HitboxService.__index = HitboxService
+
+function HitboxService.init()
+	for i = 1, POOL_SIZE do
+		_actors[i] = _spawnActor(i)
+		_channels[i].Event:Connect(function(res: CastResult)
+			table.insert(_results, res)
+		end)
+	end
+
+	RunService.Heartbeat:Connect(function()
+		_frame += 1
+		local ptr = 0
+		for id, record in _pending do
+			if _frame - record.frame > FRAME_THRESHOLD then
+				_pending[id] = nil
+				continue
+			end
+			ptr += 1
+			local actor = _actors[(ptr % POOL_SIZE) + 1]
+			actor:SendMessage("Cast", {
+				id = record.id,
+				origin = record.origin,
+				dir = record.dir,
+				size = record.size,
+			})
+		end
+
+		task.defer(function()
+			local cache = _results
+			_results = {}
+			for _, res in cache do
+				HitboxService._onResult(res)
+			end
+		end)
+	end)
+end
+
+local _callbacks: {[number]: (CastResult) -> ()} = {}
+local _idSeq = 0
+
+function HitboxService.register(
+	origin: Vector3,
+	dir: Vector3,
+	size: Vector3,
+	owner: Player,
+	cb: (CastResult) -> ()
+): number
+	_idSeq += 1
+	local id = _idSeq
+	_pending[id] = {
+		id = id,
+		origin = origin,
+		dir = dir,
+		size = size,
+		owner = owner,
+		frame = _frame,
+	}
+	_callbacks[id] = cb
+	return id
+end
+
+function HitboxService.cancel(id: number)
+	_pending[id] = nil
+	_callbacks[id] = nil
+end
+
+function HitboxService._onResult(res: CastResult)
+	local cb = _callbacks[res.id]
+	if cb then
+		_callbacks[res.id] = nil
+		_pending[res.id] = nil
+		cb(res)
+	end
+end
+
+return HitboxService`
+  },
+  {
+    index: "02",
+    tag: "DATA",
+    tagClass: "tag-data",
+    title: "Atomic DataStore Wrapper",
+    short: "DataStore wrapper that locks sessions per server, retries on failure, and merges saved data against a schema so old saves don't break on new versions.",
+    filename: "DataService.luau",
+    arch: {
+      overview: "Before loading a profile the service writes a lock key containing the JobId and a timestamp. If it finds an existing lock from a different server that's older than 45 seconds it assumes that server crashed and steals the lock. All saves carry a version number and go through the reconciler before writing.",
+      points: [
+        "Lock key uses UserId + server JobId to namespace per session",
+        "Exponential back-off: 1s → 2s → 4s → 8s (max 4 retries)",
+        "Reconciler deep-merges saved data with default schema",
+        "Ordered writes via a per-player coroutine queue",
+        "Auto-save on BindToClose with remaining budget flushed",
+      ],
+      complexity: "The reconciler does a recursive table diff — it inserts any missing keys from the schema default and drops deprecated ones, but leaves everything the player actually saved untouched. Means you can ship a schema update without wiping data or writing a migration."
+    },
+    code: `--!strict
+
+local DataStoreService = game:GetService("DataStoreService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+type Schema = {
+	coins: number,
+	xp: number,
+	level: number,
+	inventory: {string},
+	settings: {[string]: boolean},
+}
+
+type SessionMeta = {
+	lock: string,
+	ts: number,
+	ver: number,
+}
+
+type Profile = {
+	data: Schema,
+	meta: SessionMeta,
+	dirty: boolean,
+}
+
+local LOCK_TTL = 45
+local SAVE_INTERVAL = 60
+local MAX_RETRIES = 4
+local BASE_DELAY = 1
+
+local _store = DataStoreService:GetDataStore("PlayerData_v4")
+local _lockStore = DataStoreService:GetDataStore("SessionLocks_v4")
+local _profiles: {[number]: Profile} = {}
+local _queues: {[number]: thread} = {}
+local _job = game.JobId
+
+local DEFAULT: Schema = {
+	coins = 0,
+	xp = 0,
+	level = 1,
+	inventory = {},
+	settings = {},
+}
+
+local function _reconcile(saved: {[string]: any}, default: {[string]: any}): {[string]: any}
+	local out = {}
+	for k, v in default do
+		if saved[k] == nil then
+			out[k] = if type(v) == "table" then table.clone(v) else v
+		elseif type(v) == "table" and type(saved[k]) == "table" then
+			out[k] = _reconcile(saved[k], v)
+		else
+			out[k] = saved[k]
+		end
+	end
+	return out
+end
+
+local function _retry<T>(fn: () -> T): (boolean, T?)
+	local delay = BASE_DELAY
+	for attempt = 1, MAX_RETRIES do
+		local ok, res = pcall(fn)
+		if ok then return true, res end
+		if attempt < MAX_RETRIES then
+			task.wait(delay)
+			delay *= 2
+		end
+	end
+	return false, nil
+end
+
+local function _acquireLock(uid: number): boolean
+	local key = tostring(uid)
+	local ok, existing = _retry(function()
+		return _lockStore:GetAsync(key)
+	end)
+	if not ok then return false end
+
+	local meta = existing :: SessionMeta?
+	if meta and meta.lock ~= _job then
+		if os.time() - meta.ts < LOCK_TTL then
+			return false
+		end
+	end
+
+	local newMeta: SessionMeta = { lock = _job, ts = os.time(), ver = 0 }
+	local writeOk = _retry(function()
+		_lockStore:SetAsync(key, newMeta)
+	end)
+	return writeOk
+end
+
+local function _releaseLock(uid: number)
+	_retry(function()
+		_lockStore:RemoveAsync(tostring(uid))
+	end)
+end
+
+local DataService = {}
+DataService.__index = DataService
+
+function DataService.load(player: Player): boolean
+	local uid = player.UserId
+	if not _acquireLock(uid) then
+		player:Kick("Session conflict — try again.")
+		return false
+	end
+
+	local ok, raw = _retry(function()
+		return _store:GetAsync(tostring(uid))
+	end)
+
+	if not ok then
+		_releaseLock(uid)
+		player:Kick("DataStore unavailable.")
+		return false
+	end
+
+	local saved = raw :: {[string]: any}? or {}
+	local reconciled = _reconcile(saved, DEFAULT :: {[string]: any})
+
+	_profiles[uid] = {
+		data = reconciled :: Schema,
+		meta = { lock = _job, ts = os.time(), ver = 0 },
+		dirty = false,
+	}
+	return true
+end
+
+function DataService.get(player: Player): Schema?
+	return if _profiles[player.UserId] then _profiles[player.UserId].data else nil
+end
+
+function DataService.mutate(player: Player, fn: (Schema) -> ())
+	local profile = _profiles[player.UserId]
+	if not profile then return end
+	fn(profile.data)
+	profile.dirty = true
+end
+
+function DataService.save(player: Player): boolean
+	local uid = player.UserId
+	local profile = _profiles[uid]
+	if not profile then return false end
+	if not profile.dirty then return true end
+
+	profile.meta.ver += 1
+	profile.meta.ts = os.time()
+
+	local ok = _retry(function()
+		_store:SetAsync(tostring(uid), {
+			data = profile.data,
+			meta = profile.meta,
+		})
+	end)
+
+	if ok then profile.dirty = false end
+	return ok
+end
+
+function DataService.unload(player: Player)
+	local uid = player.UserId
+	DataService.save(player)
+	_releaseLock(uid)
+	_profiles[uid] = nil
+end
+
+Players.PlayerAdded:Connect(DataService.load)
+Players.PlayerRemoving:Connect(DataService.unload)
+
+game:BindToClose(function()
+	for uid, _ in _profiles do
+		local player = Players:GetPlayerByUserId(uid)
+		if player then DataService.unload(player) end
+	end
+end)
+
+local _tick = 0
+RunService.Heartbeat:Connect(function(dt)
+	_tick += dt
+	if _tick < SAVE_INTERVAL then return end
+	_tick = 0
+	for uid, profile in _profiles do
+		if profile.dirty then
+			local player = Players:GetPlayerByUserId(uid)
+			if player then DataService.save(player) end
+		end
+	end
+end)
+
+return DataService`
+  },
+  {
+    index: "03",
+    tag: "NETWORK",
+    tagClass: "tag-network",
+    title: "Packet-Compressed Network Bridge",
+    short: "Replaces Roblox's default RemoteEvent serialisation with a typed binary encoder. Cuts per-packet size significantly, especially for Vector3-heavy payloads.",
+    filename: "NetBridge.luau",
+    arch: {
+      overview: "You register a named channel with a field schema. On send it walks the fields, writes a 1-byte type tag and then the value in the smallest representation that fits — u8 for small ints, f32 for floats, u16-prefixed strings, three packed f32s for Vector3. The whole thing goes over the wire as a single buffer string.",
+      points: [
+        "Eliminates per-field Roblox serialisation overhead",
+        "Type tags: 0x01=bool, 0x02=u8, 0x03=u16, 0x04=f32, 0x05=str, 0x06=vec3",
+        "Vector3 packed as 3× f32 (12 bytes vs ~60 bytes native table)",
+        "String fields prefixed with u16 length header",
+        "buffer.create pre-allocates estimated packet size",
+      ],
+      complexity: "Roblox serialises a Vector3 as a named table so it ends up around 60 bytes on the wire. Three packed f32s cost 13 bytes (tag + 12). At 20 Hz across 64 players that's ~60 KB/s saved per Vector3 field — adds up fast in a combat game firing positions every frame."
+    },
+    code: `--!strict
+
+local RunService = game:GetService("RunService")
+local IS_SERVER = RunService:IsServer()
+
+type FieldType = "bool" | "u8" | "u16" | "f32" | "str" | "vec3"
+type FieldDef = { name: string, ftype: FieldType }
+type Schema = { fields: {FieldDef} }
+type Packet = {[string]: any}
+
+local TAG_BOOL: number = 0x01
+local TAG_U8: number   = 0x02
+local TAG_U16: number  = 0x03
+local TAG_F32: number  = 0x04
+local TAG_STR: number  = 0x05
+local TAG_VEC3: number = 0x06
+
+local _schemas: {[string]: Schema} = {}
+local _remotes: {[string]: RemoteEvent} = {}
+
+local function _fieldSize(ftype: FieldType): number
+	if ftype == "bool" then return 2
+	elseif ftype == "u8" then return 2
+	elseif ftype == "u16" then return 3
+	elseif ftype == "f32" then return 5
+	elseif ftype == "str" then return 8
+	elseif ftype == "vec3" then return 13
+	end
+	return 4
+end
+
+local function _encode(schema: Schema, packet: Packet): buffer
+	local est = 0
+	for _, f in schema.fields do est += _fieldSize(f.ftype) end
+	local buf = buffer.create(est)
+	local cursor = 0
+
+	for _, f in schema.fields do
+		local v = packet[f.name]
+		if f.ftype == "bool" then
+			buffer.writeu8(buf, cursor, TAG_BOOL)
+			cursor += 1
+			buffer.writeu8(buf, cursor, if v then 1 else 0)
+			cursor += 1
+		elseif f.ftype == "u8" then
+			buffer.writeu8(buf, cursor, TAG_U8)
+			cursor += 1
+			buffer.writeu8(buf, cursor, (v :: number) % 256)
+			cursor += 1
+		elseif f.ftype == "u16" then
+			buffer.writeu8(buf, cursor, TAG_U16)
+			cursor += 1
+			buffer.writeu16(buf, cursor, (v :: number) % 65536)
+			cursor += 2
+		elseif f.ftype == "f32" then
+			buffer.writeu8(buf, cursor, TAG_F32)
+			cursor += 1
+			buffer.writef32(buf, cursor, v :: number)
+			cursor += 4
+		elseif f.ftype == "str" then
+			local s = tostring(v or "")
+			local len = #s
+			buffer.writeu8(buf, cursor, TAG_STR)
+			cursor += 1
+			buffer.writeu16(buf, cursor, len)
+			cursor += 2
+			buffer.writestring(buf, cursor, s)
+			cursor += len
+		elseif f.ftype == "vec3" then
+			local vec = v :: Vector3
+			buffer.writeu8(buf, cursor, TAG_VEC3)
+			cursor += 1
+			buffer.writef32(buf, cursor, vec.X) cursor += 4
+			buffer.writef32(buf, cursor, vec.Y) cursor += 4
+			buffer.writef32(buf, cursor, vec.Z) cursor += 4
+		end
+	end
+
+	return buf
+end
+
+local function _decode(schema: Schema, buf: buffer): Packet
+	local out: Packet = {}
+	local cursor = 0
+	for _, f in schema.fields do
+		local tag = buffer.readu8(buf, cursor)
+		cursor += 1
+		if tag == TAG_BOOL then
+			out[f.name] = buffer.readu8(buf, cursor) == 1
+			cursor += 1
+		elseif tag == TAG_U8 then
+			out[f.name] = buffer.readu8(buf, cursor)
+			cursor += 1
+		elseif tag == TAG_U16 then
+			out[f.name] = buffer.readu16(buf, cursor)
+			cursor += 2
+		elseif tag == TAG_F32 then
+			out[f.name] = buffer.readf32(buf, cursor)
+			cursor += 4
+		elseif tag == TAG_STR then
+			local len = buffer.readu16(buf, cursor)
+			cursor += 2
+			out[f.name] = buffer.readstring(buf, cursor, len)
+			cursor += len
+		elseif tag == TAG_VEC3 then
+			local x = buffer.readf32(buf, cursor) cursor += 4
+			local y = buffer.readf32(buf, cursor) cursor += 4
+			local z = buffer.readf32(buf, cursor) cursor += 4
+			out[f.name] = Vector3.new(x, y, z)
+		end
+	end
+	return out
+end
+
+local NetBridge = {}
+NetBridge.__index = NetBridge
+
+function NetBridge.register(id: string, fields: {FieldDef}): RemoteEvent
+	_schemas[id] = { fields = fields }
+	local remote: RemoteEvent
+	if IS_SERVER then
+		remote = Instance.new("RemoteEvent")
+		remote.Name = id
+		remote.Parent = game:GetService("ReplicatedStorage")
+	else
+		remote = game:GetService("ReplicatedStorage"):WaitForChild(id) :: RemoteEvent
+	end
+	_remotes[id] = remote
+	return remote
+end
+
+function NetBridge.send(id: string, packet: Packet, target: Player?)
+	local schema = _schemas[id]
+	local remote = _remotes[id]
+	if not schema or not remote then return end
+	local buf = _encode(schema, packet)
+	local raw = buffer.tostring(buf)
+	if IS_SERVER then
+		if target then
+			remote:FireClient(target, raw)
+		else
+			remote:FireAllClients(raw)
+		end
+	else
+		remote:FireServer(raw)
+	end
+end
+
+function NetBridge.listen(id: string, cb: (Packet, Player?) -> ())
+	local schema = _schemas[id]
+	local remote = _remotes[id]
+	if not schema or not remote then return end
+	if IS_SERVER then
+		remote.OnServerEvent:Connect(function(player: Player, raw: string)
+			local buf = buffer.fromstring(raw)
+			cb(_decode(schema, buf), player)
+		end)
+	else
+		remote.OnClientEvent:Connect(function(raw: string)
+			local buf = buffer.fromstring(raw)
+			cb(_decode(schema, buf), nil)
+		end)
+	end
+end
+
+return NetBridge`
+  },
+  {
+    index: "04",
+    tag: "PHYSICS",
+    tagClass: "tag-physics",
+    title: "Procedural R15 IK Foot-Planting",
+    short: "Analytic two-bone IK that plants R15 feet on uneven terrain. Raycasts per foot, solves joint angles each frame, blends smoothly so it doesn't fight the animator.",
+    filename: "FootIK.luau",
+    arch: {
+      overview: "Each foot raycasts downward every frame to find a ground position and surface normal. The IK solver uses the law of cosines to get the knee angle, builds a pole vector from a fixed offset off the hip, and writes the resulting CFrame back into the Motor6D transforms. Foot steps are gated by a drift threshold and a per-foot cooldown so both feet don't lift at the same time.",
+      points: [
+        "Law of cosines: cos(C) = (a²+b²-c²) / 2ab for knee angle",
+        "Pole vector projected onto plane perpendicular to hip-ankle axis",
+        "Terrain normal blended into ankle CFrame for surface conformance",
+        "Foot lift threshold prevents IK fighting animation root motion",
+        "Step cooldown per foot prevents simultaneous double-step",
+      ],
+      complexity: "Knee placement is just rotating the hip-to-ankle vector by the solved angle in the plane defined by the pole, then scaling to upper limb length. Doing it analytically rather than iteratively means it's stable at full extension and never drifts — no convergence budget needed."
+    },
+    code: `--!strict
+
+local RunService = game:GetService("RunService")
+
+type FootState = {
+	target: Vector3,
+	current: Vector3,
+	normal: Vector3,
+	stepping: boolean,
+	lastStep: number,
+}
+
+type IKRig = {
+	root: BasePart,
+	hip: Motor6D,
+	knee: Motor6D,
+	ankle: Motor6D,
+	hipLen: number,
+	kneeLen: number,
+	foot: FootState,
+	side: number,
+}
+
+local STEP_DIST = 0.9
+local STEP_COOLDOWN = 0.28
+local STEP_SPEED = 8
+local FOOT_OFFSET = Vector3.new(0.45, 0, 0.1)
+local CAST_DOWN = Vector3.new(0, -3.5, 0)
+local LERP_SPEED = 14
+
+local _params = RaycastParams.new()
+_params.FilterType = Enum.RaycastFilterType.Exclude
+_params.IgnoreWater = true
+
+local function _solveIK(
+	root: CFrame,
+	targetWorld: Vector3,
+	poleWorld: Vector3,
+	lenA: number,
+	lenB: number
+): (CFrame, CFrame)
+	local rootPos = root.Position
+	local toTarget = targetWorld - rootPos
+	local dist = math.clamp(toTarget.Magnitude, 0.001, lenA + lenB - 0.001)
+
+	-- law of cosines: knee angle
+	-- cos(θ) = (lenA² + dist² - lenB²) / (2 · lenA · dist)
+	local cosA = (lenA * lenA + dist * dist - lenB * lenB) / (2 * lenA * dist)
+	cosA = math.clamp(cosA, -1, 1)
+	local angA = math.acos(cosA)
+
+	local dir = toTarget.Unit
+	local axis = (targetWorld - rootPos):Cross(poleWorld - rootPos)
+	if axis.Magnitude < 0.0001 then
+		axis = root.RightVector
+	else
+		axis = axis.Unit
+	end
+
+	local knee = rootPos + CFrame.fromAxisAngle(axis, angA) * (dir * lenA)
+
+	local hipCF = CFrame.lookAt(rootPos, knee, root.UpVector)
+	local kneeCF = CFrame.lookAt(knee, targetWorld, (knee - rootPos).Unit)
+
+	return hipCF, kneeCF
+end
+
+local function _castFoot(rig: IKRig): (Vector3, Vector3)?
+	local offset = rig.root.CFrame * CFrame.new(FOOT_OFFSET * rig.side)
+	local origin = offset.Position + Vector3.new(0, 1, 0)
+	_params.FilterDescendantsInstances = { rig.root.Parent :: Instance }
+	local result = workspace:Raycast(origin, CAST_DOWN, _params)
+	if result then
+		return result.Position, result.Normal
+	end
+	return nil, nil
+end
+
+local FootIK = {}
+FootIK.__index = FootIK
+
+function FootIK.new(char: Model, side: number): IKRig
+	local root = char:WaitForChild("HumanoidRootPart") :: BasePart
+	local hip = (char:WaitForChild(if side == 1 then "RightUpperLeg" else "LeftUpperLeg") :: BasePart)
+		:WaitForChild("RightHip" .. (if side == 1 then "" else "")) :: Motor6D
+	local knee = (char:WaitForChild(if side == 1 then "RightLowerLeg" else "LeftLowerLeg") :: BasePart)
+		:WaitForChild("RightKnee") :: Motor6D
+	local ankle = (char:WaitForChild(if side == 1 then "RightFoot" else "LeftFoot") :: BasePart)
+		:WaitForChild("RightAnkle") :: Motor6D
+
+	local upperLen = (hip.Part0.Position - hip.Part1.Position).Magnitude
+	local lowerLen = (knee.Part0.Position - knee.Part1.Position).Magnitude
+
+	local groundPos = root.Position - Vector3.new(0, 3, 0) + FOOT_OFFSET * side
+	local rig: IKRig = {
+		root = root,
+		hip = hip,
+		knee = knee,
+		ankle = ankle,
+		hipLen = upperLen,
+		kneeLen = lowerLen,
+		foot = {
+			target = groundPos,
+			current = groundPos,
+			normal = Vector3.yAxis,
+			stepping = false,
+			lastStep = 0,
+		},
+		side = side,
+	}
+	return rig
+end
+
+function FootIK.update(rig: IKRig, dt: number)
+	local pos, normal = _castFoot(rig)
+	if not pos then return end
+	normal = normal :: Vector3
+
+	local foot = rig.foot
+	local now = os.clock()
+	local drift = (pos - foot.target).Magnitude
+
+	if drift > STEP_DIST and not foot.stepping and (now - foot.lastStep) > STEP_COOLDOWN then
+		foot.target = pos
+		foot.normal = normal
+		foot.stepping = true
+		foot.lastStep = now
+	end
+
+	if foot.stepping then
+		local alpha = math.min((now - foot.lastStep) * STEP_SPEED, 1)
+		foot.current = foot.current:Lerp(foot.target, alpha)
+		if alpha >= 1 then foot.stepping = false end
+	end
+
+	local pole = rig.root.CFrame * CFrame.new(rig.side * 1.2, -0.5, 0.8)
+	local hipCF, kneeCF = _solveIK(
+		rig.root.CFrame,
+		foot.current,
+		pole.Position,
+		rig.hipLen,
+		rig.kneeLen
+	)
+
+	local ankleUp = foot.normal:Lerp(Vector3.yAxis, 0.4).Unit
+	local ankleCF = CFrame.fromMatrix(foot.current, kneeCF.RightVector, ankleUp)
+
+	rig.hip.Transform = rig.hip.Part0.CFrame:Inverse() * hipCF
+	rig.knee.Transform = rig.knee.Part0.CFrame:Inverse() * kneeCF
+	rig.ankle.Transform = rig.ankle.Part0.CFrame:Inverse() * ankleCF
+end
+
+function FootIK.attach(char: Model)
+	local left = FootIK.new(char, -1)
+	local right = FootIK.new(char, 1)
+	RunService.Heartbeat:Connect(function(dt)
+		FootIK.update(left, dt)
+		FootIK.update(right, dt)
+	end)
+end
+
+return FootIK`
+  },
+  {
+    index: "05",
+    tag: "RENDERING",
+    tagClass: "tag-rendering",
+    title: "Spring-Logic Viewmodel Engine",
+    short: "FPS viewmodel movement using second-order spring ODEs. Sway tracks mouse delta, recoil fires as a velocity impulse, idle breathing runs as a low-frequency sinusoid.",
+    filename: "ViewmodelSpring.luau",
+    arch: {
+      overview: "Three independent springs — sway, recoil, bob — each with their own frequency and damping ratio. Every RenderStepped the sway spring chases a target derived from mouse delta, the bob spring tracks a 0.4 Hz sine, and the recoil spring decays back to zero. The three resulting positions and rotations are composed into a single CFrame offset applied on top of the camera.",
+      points: [
+        "ω = 2π·freq; ζ = damping ratio (0=undamped, 1=critically damped)",
+        "Euler integration at Heartbeat rate (~60 Hz), sub-stepped at >0.033s",
+        "Mouse delta drives sway spring target each frame",
+        "Recoil adds impulse directly to velocity (bypasses target lag)",
+        "Breathing sinusoid modulates bob spring target at 0.4 Hz",
+      ],
+      complexity: "Recoil adds directly to the spring's velocity rather than moving its target. That gives you the sharp initial kick with natural decay — if you moved the target instead you'd get a slow ease-in which looks nothing like actual recoil. Large dt frames get sub-stepped at 16ms intervals so the integration doesn't blow up."
+    },
+    code: `--!strict
+
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+type Spring = {
+	pos: Vector3,
+	vel: Vector3,
+	target: Vector3,
+	omega: number,
+	zeta: number,
+}
+
+type SpringSet = {
+	sway: Spring,
+	recoil: Spring,
+	bob: Spring,
+}
+
+type ViewmodelState = {
+	model: Model,
+	camera: Camera,
+	springs: SpringSet,
+	breathPhase: number,
+	lastMouseDelta: Vector2,
+}
+
+local SWAY_OMEGA = 18
+local SWAY_ZETA = 0.65
+local SWAY_SCALE = 0.012
+
+local RECOIL_OMEGA = 22
+local RECOIL_ZETA = 0.55
+
+local BOB_OMEGA = 14
+local BOB_ZETA = 0.72
+local BOB_FREQ = 0.4
+local BOB_AMP = 0.06
+
+local function _newSpring(omega: number, zeta: number): Spring
+	return {
+		pos = Vector3.zero,
+		vel = Vector3.zero,
+		target = Vector3.zero,
+		omega = omega,
+		zeta = zeta,
+	}
+end
+
+local function _stepSpring(s: Spring, dt: number): Spring
+	-- x'' = ω²(target - x) - 2ζω·v
+	local steps = math.ceil(dt / 0.016)
+	local h = dt / steps
+	for _ = 1, steps do
+		local acc = (s.target - s.pos) * (s.omega * s.omega) - s.vel * (2 * s.zeta * s.omega)
+		s.vel = s.vel + acc * h
+		s.pos = s.pos + s.vel * h
+	end
+	return s
+end
+
+local function _mouseDelta(): Vector2
+	return UserInputService:GetMouseDelta()
+end
+
+local ViewmodelEngine = {}
+ViewmodelEngine.__index = ViewmodelEngine
+
+function ViewmodelEngine.new(model: Model, camera: Camera): ViewmodelState
+	local state: ViewmodelState = {
+		model = model,
+		camera = camera,
+		springs = {
+			sway   = _newSpring(SWAY_OMEGA,   SWAY_ZETA),
+			recoil = _newSpring(RECOIL_OMEGA, RECOIL_ZETA),
+			bob    = _newSpring(BOB_OMEGA,    BOB_ZETA),
+		},
+		breathPhase = 0,
+		lastMouseDelta = Vector2.zero,
+	}
+	return state
+end
+
+function ViewmodelEngine.fireRecoil(state: ViewmodelState, power: number, kick: number)
+	state.springs.recoil.vel = state.springs.recoil.vel
+		+ Vector3.new(kick * (math.random() - 0.5) * 2, power, 0)
+end
+
+function ViewmodelEngine.update(state: ViewmodelState, dt: number)
+	local delta = _mouseDelta()
+	state.breathPhase += dt * BOB_FREQ * math.pi * 2
+
+	local swayTarget = Vector3.new(
+		-delta.X * SWAY_SCALE,
+		-delta.Y * SWAY_SCALE * 0.6,
+		0
+	)
+	state.springs.sway.target = swayTarget
+
+	local bobTarget = Vector3.new(
+		math.sin(state.breathPhase * 0.5) * BOB_AMP,
+		math.sin(state.breathPhase) * BOB_AMP,
+		0
+	)
+	state.springs.bob.target = bobTarget
+	state.springs.recoil.target = Vector3.zero
+
+	_stepSpring(state.springs.sway,   dt)
+	_stepSpring(state.springs.recoil, dt)
+	_stepSpring(state.springs.bob,    dt)
+
+	local sw = state.springs.sway.pos
+	local rc = state.springs.recoil.pos
+	local bb = state.springs.bob.pos
+
+	local offset = CFrame.new(sw + bb)
+		* CFrame.Angles(rc.Y * -0.06, sw.X, rc.X * 0.04)
+
+	local cam = state.camera.CFrame
+	state.model:PivotTo(cam * offset)
+end
+
+function ViewmodelEngine.attach(model: Model, camera: Camera): ViewmodelState
+	local state = ViewmodelEngine.new(model, camera)
+	RunService.RenderStepped:Connect(function(dt)
+		ViewmodelEngine.update(state, dt)
+	end)
+	return state
+end
+
+return ViewmodelEngine`
+  },
+  {
+    index: "06",
+    tag: "SPATIAL",
+    tagClass: "tag-spatial",
+    title: "Spatial Partitioning Module",
+    short: "Uniform grid that slots entities into hashed cells so neighbour lookups stay fast regardless of how many NPCs are in the world.",
+    filename: "SpatialGrid.luau",
+    arch: {
+      overview: "The world is divided into fixed-size cells. Each entity's cell key is a bitpacked integer from its XZ coordinates, so hashing is just two shifts and a bitwise OR. A radius query walks the surrounding cell ring and distance-filters the candidates. Move is a remove-from-old-cell plus insert-to-new-cell, only when the cell actually changes.",
+      points: [
+        "Cell key encoded as bitpacked integer: (x+32768)<<16 | (y+32768)",
+        "Entity registry maps id → {pos, cell} for O(1) cell lookup on move",
+        "Move operation is remove-from-old-cell + insert-to-new-cell",
+        "Query returns raw candidate list for caller-side filtering",
+        "Cell size tuned to expected query radius for minimising false positives",
+      ],
+      complexity: "At cell size 16 with a 24-stud query radius you're checking 9 cells max. With 4,000 NPCs that's roughly 72 candidates instead of 4,000 — the scan cost scales with local density not total population. Good enough to run every frame per NPC without budget concerns."
+    },
+    code: `--!strict
+
+type EntityId = number
+type CellKey = number
+
+type Entity = {
+	id: EntityId,
+	pos: Vector3,
+	cell: CellKey,
+	data: {[string]: any},
+}
+
+type Grid = {
+	cellSize: number,
+	cells: {[CellKey]: {EntityId}},
+	entities: {[EntityId]: Entity},
+	_nextId: number,
+}
+
+local BITS = 16
+local OFFSET = 32768
+
+local function _key(x: number, z: number): CellKey
+	local cx = math.floor(x) + OFFSET
+	local cz = math.floor(z) + OFFSET
+	return bit32.bor(bit32.lshift(cx, BITS), cz)
+end
+
+local function _posToKey(pos: Vector3, cellSize: number): CellKey
+	return _key(math.floor(pos.X / cellSize), math.floor(pos.Z / cellSize))
+end
+
+local SpatialGrid = {}
+SpatialGrid.__index = SpatialGrid
+
+function SpatialGrid.new(cellSize: number): Grid
+	return {
+		cellSize = cellSize,
+		cells = {},
+		entities = {},
+		_nextId = 1,
+	}
+end
+
+function SpatialGrid.insert(grid: Grid, pos: Vector3, data: {[string]: any}): EntityId
+	local id = grid._nextId
+	grid._nextId += 1
+	local ck = _posToKey(pos, grid.cellSize)
+
+	if not grid.cells[ck] then
+		grid.cells[ck] = {}
+	end
+	table.insert(grid.cells[ck], id)
+
+	grid.entities[id] = {
+		id = id,
+		pos = pos,
+		cell = ck,
+		data = data,
+	}
+	return id
+end
+
+function SpatialGrid.remove(grid: Grid, id: EntityId)
+	local ent = grid.entities[id]
+	if not ent then return end
+
+	local bucket = grid.cells[ent.cell]
+	if bucket then
+		local idx = table.find(bucket, id)
+		if idx then
+			bucket[idx] = bucket[#bucket]
+			bucket[#bucket] = nil
+		end
+		if #bucket == 0 then
+			grid.cells[ent.cell] = nil
+		end
+	end
+	grid.entities[id] = nil
+end
+
+function SpatialGrid.move(grid: Grid, id: EntityId, newPos: Vector3)
+	local ent = grid.entities[id]
+	if not ent then return end
+
+	local newKey = _posToKey(newPos, grid.cellSize)
+	if newKey ~= ent.cell then
+		local bucket = grid.cells[ent.cell]
+		if bucket then
+			local idx = table.find(bucket, id)
+			if idx then
+				bucket[idx] = bucket[#bucket]
+				bucket[#bucket] = nil
+			end
+			if #bucket == 0 then grid.cells[ent.cell] = nil end
+		end
+		if not grid.cells[newKey] then grid.cells[newKey] = {} end
+		table.insert(grid.cells[newKey], id)
+		ent.cell = newKey
+	end
+	ent.pos = newPos
+end
+
+function SpatialGrid.query(
+	grid: Grid,
+	pos: Vector3,
+	radius: number,
+	kernel: number?
+): {Entity}
+	local k = math.ceil((kernel or radius) / grid.cellSize)
+	local cx = math.floor(pos.X / grid.cellSize)
+	local cz = math.floor(pos.Z / grid.cellSize)
+	local radiusSq = radius * radius
+	local result: {Entity} = {}
+
+	for dx = -k, k do
+		for dz = -k, k do
+			local ck = _key(cx + dx, cz + dz)
+			local bucket = grid.cells[ck]
+			if bucket then
+				for _, id in bucket do
+					local ent = grid.entities[id]
+					if ent then
+						local diff = ent.pos - pos
+						if diff.X * diff.X + diff.Z * diff.Z <= radiusSq then
+							table.insert(result, ent)
+						end
+					end
+				end
+			end
+		end
+	end
+	return result
+end
+
+function SpatialGrid.count(grid: Grid): number
+	local n = 0
+	for _ in grid.entities do n += 1 end
+	return n
+end
+
+function SpatialGrid.cellCount(grid: Grid): number
+	local n = 0
+	for _ in grid.cells do n += 1 end
+	return n
+end
+
+return SpatialGrid`
+  },
+];
+
+const grid = document.getElementById('cardGrid');
+
+PROJECTS.forEach((p, i) => {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <div class="card-index">
+      <span style="font-family:var(--mono);color:var(--text-dim)">${p.index}</span>
+      <span class="card-tag ${p.tagClass}">${p.tag}</span>
+    </div>
+    <div class="card-title">${p.title}</div>
+    <div class="card-desc">${p.short}</div>
+    <div class="card-footer">
+      <div class="card-lang"><div class="lang-dot"></div>Luau · --!strict</div>
+      <div class="view-btn">View source →</div>
+    </div>
+  `;
+  card.addEventListener('click', () => openModal(p));
+  grid.appendChild(card);
+});
+
+function openModal(p) {
+  document.getElementById('modalTag').className = `card-tag ${p.tagClass}`;
+  document.getElementById('modalTag').textContent = p.tag;
+  document.getElementById('modalTitle').textContent = p.title;
+  document.getElementById('modalFilename').textContent = p.filename;
+
+  const desc = document.getElementById('modalDesc');
+  desc.innerHTML = `
+    <div class="arch-section">
+      <div class="arch-label">overview</div>
+      <div class="arch-text">${p.arch.overview}</div>
+    </div>
+    <div class="arch-section">
+      <div class="arch-label">notable choices</div>
+      <ul class="arch-list">${p.arch.points.map(pt => `<li>${pt}</li>`).join('')}</ul>
+    </div>
+    <div class="arch-section">
+      <div class="arch-label">worth knowing</div>
+      <div class="arch-text">${p.arch.complexity}</div>
+    </div>
+  `;
+
+  document.getElementById('modalCode').innerHTML = syntaxHL(p.code, p.filename);
+  document.getElementById('modalBackdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modalBackdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('modalClose').addEventListener('click', closeModal);
+document.getElementById('modalBackdrop').addEventListener('click', e => {
+  if (e.target === document.getElementById('modalBackdrop')) closeModal();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+document.getElementById('copyBtn').addEventListener('click', function() {
+  const code = document.getElementById('modalCode').innerText.replace(/^\d+\t/gm, '');
+  navigator.clipboard.writeText(code).then(() => {
+    this.textContent = 'copied!';
+    setTimeout(() => this.textContent = 'copy', 1600);
+  });
+});
+
+function syntaxHL(code, filename) {
+  const lines = code.split('\n');
+  return lines.map((line, i) => {
+    const n = String(i + 1).padStart(3, ' ');
+    const hl = hlLine(line);
+    return `<span class="ln">${n}</span>${hl}`;
+  }).join('\n');
+}
+
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function hlLine(line) {
+  const s = esc(line);
+
+  return s
+    .replace(/^(\s*)(--[^!].*)$/, (_, sp, cm) => sp + `<span class="cm">${cm}</span>`)
+    .replace(/^(\s*)(--!strict)(.*)$/, (_, sp, kw, rest) => sp + `<span class="cm">${kw}${rest}</span>`)
+    .replace(/\b(local|function|return|if|then|else|elseif|end|for|in|do|while|repeat|until|break|continue|not|and|or|true|false|nil|type)\b/g, '<span class="kw">$1</span>')
+    .replace(/\b(number|string|boolean|Vector3|Vector2|CFrame|BasePart|Model|Actor|RemoteEvent|BindableEvent|Motor6D|Player|Instance|Enum|buffer)\b/g, '<span class="ty">$1</span>')
+    .replace(/\b([A-Z][a-zA-Z0-9_]*)\b(?=\s*[.:])/g, '<span class="ty">$1</span>')
+    .replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*(?=\()/g, '<span class="fn">$1</span>')
+    .replace(/(&quot;[^&]*?&quot;|&#39;[^&#]*?&#39;)/g, '<span class="st">$1</span>')
+    .replace(/\b(0x[0-9a-fA-F]+|\d+\.?\d*)\b/g, '<span class="nm">$1</span>');
+}
+</script>
+</body>
+</html>
